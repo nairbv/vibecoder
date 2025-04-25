@@ -1,0 +1,21 @@
+# Bytecode artifacts
+__pycache__/
+*.pyc
+
+# Local environment variables
+.env
+
+# VSCode settings
+.vscode/
+
+# pytest cache
+.pytest_cache/
+
+# Vim backup/swap files
+*~
+*.swp
+*.swo
+
+# macOS system files
+.DS_Store
+
