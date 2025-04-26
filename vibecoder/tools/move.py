@@ -3,8 +3,7 @@ from vibecoder.tools.base import Tool
 
 class MoveTool(Tool):
     def __init__(self):
-        # No parameters needed for superclass initialization
-        pass
+        self.name = "move_tool"
 
     @property
     def signature(self) -> dict:
@@ -14,8 +13,8 @@ class MoveTool(Tool):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "origin": "string (required): The path of the file or directory to be moved.",
-                        "destination": "string (required): The target path for the file or directory."
+                        "origin": {"type": "string", "description": "The path of the file or directory to be moved."},
+                        "destination": {"type": "string", "description": "The target path for the file or directory."}
                     },
                     "required": ["origin", "destination"]
                 }
