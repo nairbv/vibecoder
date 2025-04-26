@@ -4,6 +4,7 @@ from vibecoder.tools.tree_files import TreeFilesTool
 from vibecoder.tools.write_file import WriteFileTool
 from vibecoder.tools.apply_patch import ApplyPatchTool
 from vibecoder.tools.pytest_tool import PytestTool
+from vibecoder.tools.git_tool import GitTool
 
 from jinja2 import Template
 import pathlib
@@ -17,6 +18,7 @@ def build_swe_agent() -> Agent:
         TreeFilesTool(),
         ApplyPatchTool(),
         PytestTool(),
+        GitTool(),
     ]
 
     tool_descriptions = "\n".join(t.display_signature for t in tools)
