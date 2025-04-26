@@ -36,6 +36,14 @@ class REPLContextManager:
         self._working = False
         self._interrupted = False
         self._restart_after_edit = None
+        self._status_task = None
+        self.status_bar = TextArea(
+            style="class:status",
+            focusable=False,
+            height=1,
+            read_only=True,
+            text="Status: Ready"
+        )
         self._create_application()
 
     def _create_application(self):
@@ -65,6 +73,7 @@ class REPLContextManager:
 
         self.layout = Layout(
             HSplit([
+                self.status_bar,
                 self.output_window,
                 Window(height=1, char="-"),  # Separator line
                 self.input_window,
@@ -79,6 +88,7 @@ class REPLContextManager:
         self.style = Style.from_dict({
             "output": "bg:#111111 #ffffff",
             "input": "bg:#222222 #00ff00",
+            "status": "bg:#444444 #ffffff bold",
         })
 
         self.app = Application(
@@ -124,7 +134,9 @@ class REPLContextManager:
             if line.startswith("/"):
                 await self.handle_command(line[1:].strip())
             else:
+                self.update_status("💭 Thinking...", animate=True)  # Update status
                 await self.ask(line)
+                self.update_status("👂 Waiting for input...", animate=False)  # Revert
         except Exception as e:
             tb = traceback.format_exc()
             self.print(f"⚠️ Exception occurred:\n{tb}")
@@ -243,6 +255,30 @@ class REPLContextManager:
         #     max_scroll = window.render_info.content_height - window.render_info.window_height
         #     window.vertical_scroll = min(max_scroll, (window.vertical_scroll or 0) + scroll_amount)
         #     event.app.invalidate()
+
+    def update_status(self, text, animate=False):
+        # Properly replace the existing text
+        self.status_bar.text = f"Status: {text}"
+        self.status_bar.buffer.cursor_position = 0
+
+        if animate:
+            if self._status_task is None or self._status_task.cancelled():
+                self._status_task = asyncio.create_task(self.start_status_animation())
+        else:
+            if self._status_task:
+                self._status_task.cancel()
+
+    async def start_status_animation(self):
+        """Start a looping task to update the status bar for animations."""
+        animation_frames = ['|', '/', '-', '\\']
+        idx = 0
+        while True:
+            base_status = self.status_bar.text.partition(" - ")[0].replace("Status: ", "")
+            self.update_status(f"{base_status} - {animation_frames[idx]}", animate=True)
+            idx = (idx + 1) % len(animation_frames)
+            await asyncio.sleep(0.5)
+        
+
 
 def main():
     repl = REPLContextManager()
