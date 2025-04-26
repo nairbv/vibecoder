@@ -67,6 +67,7 @@ class REPLContextManager:
         edited_text = self._open_editor(template)
         if edited_text:
             print(edited_text)
+            self.session.history.append_string(edited_text)
             self.ask(edited_text)
 
     def _prepare_editor_template(self) -> str:
