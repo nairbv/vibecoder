@@ -39,7 +39,10 @@ class Agent:
                     tool_name = call.function.name
                     args = json.loads(call.function.arguments)
 
-                    yield f"{tool_name}({args})\n"
+                    args_str = str(args)
+                    if len(args_str) > 200:
+                        args_str = args_str[:200] + "..."
+                    yield f"{tool_name}({args_str})\n"
 
                     if tool_name not in self.tools:
                         result = f"[Tool {tool_name} not implemented]"
@@ -48,7 +51,7 @@ class Agent:
                         if len(result):
                             result += "\n"
 
-                    yield result
+                    # yield result
 
                     self.messages.append({
                         "role": "assistant",
