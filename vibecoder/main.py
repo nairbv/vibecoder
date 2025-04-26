@@ -1,6 +1,8 @@
 import os
+import click
 from dotenv import load_dotenv
 from prompt_toolkit import PromptSession
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 
@@ -18,13 +20,32 @@ def load_env():
 def is_command(line: str):
     return line.startswith("/")
 
-def handle_command(line: str):
-    command = line[1:].strip()
-    if command in {"quit", "exit"}:
-        print("👋 Exiting vibecoder.")
-        exit(0)
+
+def open_editor_with_template(template_text=""):
+    """Opens system $EDITOR with optional template text."""
+    edited_text = click.edit(text=template_text)
+    if edited_text is not None:
+        return edited_text.strip()
+    return ""
+
+def do_ask(line, agent):
+    for output in agent.ask(line):
+        print(f"🤖 SWE: {output}")
+
+
+def handle_line(line, agent):
+    if is_command(line):
+        command = line[1:].strip()
+        if command in {"quit", "exit"}:
+            print("👋 Exiting vibecoder.")
+            exit(0)
+        elif command == "edit":
+            command = open_editor_with_template()
+            do_ask(command, agent)
+        else:
+            print(f"⚠️ Unknown command: /{command}")
     else:
-        print(f"⚠️ Unknown command: /{command}")
+        do_ask(line, agent)
 
 def main():
     load_env()
@@ -43,11 +64,8 @@ def main():
                 if not line.strip():
                     continue
 
-                if is_command(line):
-                    handle_command(line)
-                else:
-                    for output in agent.ask(line):
-                        print(f"🤖 SWE: {output}")
+                handle_line(line, agent)
+
             except KeyboardInterrupt:
                 print("\n(Use /quit to exit)")
             except EOFError:

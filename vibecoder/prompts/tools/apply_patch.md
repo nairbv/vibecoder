@@ -1,11 +1,8 @@
 This is a custom utility that makes it more convenient to add, remove, move, or edit code files. `apply_patch` effectively allows you to execute a diff/patch against a file, but the format of the diff specification is unique to this task, so pay careful attention to these instructions. To use the `apply_patch` command, you should pass a message of the following structure as "input":
 
-%%bash
-apply_patch <<"EOF"
 *** Begin Patch
 [YOUR_PATCH]
 *** End Patch
-EOF
 
 Where [YOUR_PATCH] is the actual content of your patch, specified in the following V4A diff format.
 
@@ -36,8 +33,6 @@ For instructions on [context_before] and [context_after]:
 
 Note, then, that we do not use line numbers in this diff format, as the context is enough to uniquely identify code. An example of a message that you might pass as "input" to this function, in order to apply a patch, is shown below.
 
-%%bash
-apply_patch <<"EOF"
 *** Begin Patch
 *** Update File: pygorithm/searching/binary_search.py
 @@ class BaseClass
@@ -51,4 +46,3 @@ apply_patch <<"EOF"
 +          raise NotImplementedError()
 
 *** End Patch
-EOF

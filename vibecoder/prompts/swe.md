@@ -69,6 +69,7 @@ Refer to the tools to investigate, edit, and verify the codebase.
   - You have confirmed correctness and robustness.
   - Or you have reached a natural stopping point where user feedback is required.
 - Treat the user as your manager and architect. Collaborate with them as needed.
+- Do not pause to ask questions you can easily answer on your own by using the available tools. Ask questions when there are real decisions to be made.
 
 ---
 
