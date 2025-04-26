@@ -3,6 +3,7 @@ import tempfile
 import warnings
 from vibecoder.tools.pytest_tool import PytestTool
 
+
 def test_pytest_tool_basic_run():
     """Test running PytestTool on a small passing test file."""
     tool = PytestTool()
@@ -24,7 +25,16 @@ def test_dummy():
         # Use a warnings filter context to suppress deprecation warnings
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
-            output = tool.run(args)
+
+            # Use the temporary directory as a fallback
+            previous_dir = tempfile.gettempdir()
+
+            # Change the current directory for running the tool
+            try:
+                os.chdir(tmpdir)
+                output = tool.run(args)
+            finally:
+                os.chdir(previous_dir)
 
         # Basic checks
         assert "Exit code:" in output
@@ -50,10 +60,19 @@ def test_fail():
             "verbose": True,
         }
 
-        # Suppress deprecation warnings
+        # Suppress deprecation warnings and manage directory context
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
-            output = tool.run(args)
+
+            # Use the temporary directory as a fallback
+            previous_dir = tempfile.gettempdir()
+
+            # Change the current directory for running the tool
+            try:
+                os.chdir(tmpdir)
+                output = tool.run(args)
+            finally:
+                os.chdir(previous_dir)
 
         assert "Exit code:" in output
         assert "STDOUT:" in output
