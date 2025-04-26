@@ -11,6 +11,7 @@ def test_git_status():
     assert "On branch" in output or "Not a git repository" in output, "Unexpected output for 'git status'."
 
 def test_git_invalid_command():
-    args = {"command": "nonexistent_command"}
+    # For now, we don't allow 'write' commands
+    args = {"command": "init"}
     output = git_tool.run(args)
     assert "Error:" in output, "Expected an error message for an invalid git command."

@@ -48,7 +48,7 @@ class GitTool(Tool):
     def run(self, args: Dict) -> str:
         command = args.get("command")
         if command not in self.supported_commands:
-            return f"Attempted to use unsupported git command {command}. Only [{', '.join(self.supported_commands)}] are supported"
+            return f"Error: Attempted to use unsupported git command {command}. Only [{', '.join(self.supported_commands)}] are supported"
         options = args.get("options", [])
         paths = args.get("paths", [])
 
