@@ -68,11 +68,13 @@ class REPLContextManager:
                 self.output_window,
                 Window(height=1, char="-"),  # Separator line
                 self.input_window,
-            ])
+            ]),
         )
 
         self.kb = KeyBindings()
         self.kb.add("c-c")(self.handle_ctrl_c)
+        self.kb.add("pageup")(self.handle_pageup)
+        self.kb.add("pagedown")(self.handle_pagedown)
 
         self.style = Style.from_dict({
             "output": "bg:#111111 #ffffff",
@@ -97,7 +99,6 @@ class REPLContextManager:
             if not self._restart_after_edit:
                 break
 
-            edited_text = self._restart_after_edit
             self._restart_after_edit = None
 
             self._create_application()
@@ -105,12 +106,12 @@ class REPLContextManager:
     def on_enter(self, buffer):
         try:
             text = buffer.text
-
-            if text.strip():
-                buffer.text = ""
+            text = text.strip()
+            if text:
                 self.input_window.buffer.history.append_string(text)
                 self.print(f"💬 $ {text}")
                 asyncio.create_task(self.handle_line(text))
+            buffer.text = ""
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -203,12 +204,45 @@ class REPLContextManager:
         return stripped.strip()
 
     def print(self, text: str):
+        # self.output_window.buffer.insert_text(text + "\n", move_cursor=True)
         self.output_window.text += text + "\n"
+        self.output_window.buffer.cursor_position = len(self.output_window.buffer.text)
 
     def handle_ctrl_c(self, event):
         self._interrupted = True
         self.print("🛑 Ctrl+C interrupt received.")
 
+    def handle_pageup(self, event):
+        buffer = self.output_window.buffer
+        lines = buffer.text[:buffer.cursor_position].splitlines()
+        lines_to_scroll = 20  # Scroll up about 20 lines
+        new_line_index = max(0, len(lines) - lines_to_scroll)
+        new_pos = sum(len(line) + 1 for line in lines[:new_line_index])  # +1 for each newline character
+        buffer.cursor_position = new_pos
+
+        # couldn't get this to work
+        # window = self.output_window.window
+        # if window and window.render_info:
+        #     scroll_amount = window.render_info.window_height // 2  # Half a screen
+        #     window.vertical_scroll = max(0, (window.vertical_scroll or 0) - scroll_amount)
+        #     event.app.invalidate()
+
+    def handle_pagedown(self, event):
+        buffer = self.output_window.buffer
+        lines = buffer.text[:buffer.cursor_position].splitlines()
+        total_lines = buffer.text.count("\n")
+        lines_to_scroll = 20  # Scroll down about 20 lines
+        new_line_index = min(total_lines, len(lines) + lines_to_scroll)
+        new_pos = sum(len(line) + 1 for line in buffer.text.splitlines()[:new_line_index])
+        buffer.cursor_position = new_pos
+
+        # couldn't get this to work
+        # window = self.output_window.window
+        # if window and window.render_info:
+        #     scroll_amount = window.render_info.window_height // 2  # Half a screen
+        #     max_scroll = window.render_info.content_height - window.render_info.window_height
+        #     window.vertical_scroll = min(max_scroll, (window.vertical_scroll or 0) + scroll_amount)
+        #     event.app.invalidate()
 
 def main():
     repl = REPLContextManager()
