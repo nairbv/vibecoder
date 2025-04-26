@@ -6,7 +6,7 @@ Each tools has:
 
 * A unit test in tests/tools/test_`tool_name`_tool.py
 * A file describing its usage in vibecoder/prompts/tools/`tool_name`.md
-* A subclass of Tool, called `tool_name`Tool(Tool) in vibecoder/tools/`tool_name`.py
+* A subclass of Tool, called `tool_name`Tool(Tool) in vibecoder/tools/`tool_name`.py. This file must read the .md file.
 * If the intent is for use by a software developing agent (most tools), an entry in vibecoder/agents/swe.py
 
 ## Guidelines
