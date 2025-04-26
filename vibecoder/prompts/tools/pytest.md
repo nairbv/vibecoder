@@ -1,14 +1,42 @@
 # Pytest Tool
 
-**Purpose**:
-The Pytest tool is designed to execute pytest on the specified test files or directories within the repository, returning results and any output.
+**Purpose**:  
+The Pytest tool runs tests within the project and captures both the detailed output and any error messages. This helps verify whether recent code changes are correct and identify issues when tests fail.
+
+---
 
 **Inputs**:
-- `paths`: A list of paths to the test files or directories you wish to run.
-- `options`: (Optional) Additional command-line options for pytest, such as `-v`, `-q`, etc.
+
+- `paths` (list of strings, **required**):  
+  One or more paths to test files or directories you wish to run with pytest.
+
+- `verbose` (boolean, optional):  
+  If `true`, run tests in verbose mode, showing detailed information about each individual test.
+
+- `quiet` (boolean, optional):  
+  If `true`, run tests in quiet mode, reducing the amount of output.
+
+- `maxfail` (integer, optional):  
+  If provided, stop running after the specified number of test failures.
+
+---
 
 **Outputs**:
-- Returns a summary of the pytest execution, including a result code indicating success or failure.
 
-**Usage**:
-Use this tool to automatically run your project's tests and quickly review the outcomes, assisting with continuous integration workflows.
+- The full stdout and stderr output from running pytest, including:
+  - A detailed report of passed, failed, or skipped tests.
+  - Stack traces or failure messages if tests fail.
+  - The pytest exit code.
+
+The output allows you to debug issues by inspecting test failure details.
+
+---
+
+**Usage Guidelines**:
+
+- Always specify at least one valid test path.
+- Use `verbose=true` to get full test details.
+- Use `maxfail` when quickly debugging a few failures.
+- Avoid passing free-form pytest options; instead, use the explicit fields provided (`verbose`, `quiet`, `maxfail`).
+
+If a test fails, you are expected to carefully read the captured output and identify what went wrong before making further code changes.

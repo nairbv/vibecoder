@@ -1,7 +1,9 @@
+import io
+import sys
 import os
+import subprocess
 from .base import Tool
-import pytest
-from typing import Dict
+from typing import Dict, List
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
 
@@ -26,15 +28,22 @@ class PytestTool(Tool):
                     "properties": {
                         "paths": {
                             "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "description": "Paths to test files or directories to run."
+                            "items": {"type": "string"},
+                            "description": "List of test files or directories to run."
                         },
-                        "options": {
-                            "type": "string",
-                            "description": "Additional pytest options (e.g., -q for quiet, -v for verbose).",
-                            "default": ""
+                        "verbose": {
+                            "type": "boolean",
+                            "description": "Run tests in verbose mode (show all tests).",
+                            "default": False
+                        },
+                        "quiet": {
+                            "type": "boolean",
+                            "description": "Run tests quietly (only show minimal output).",
+                            "default": False
+                        },
+                        "maxfail": {
+                            "type": "integer",
+                            "description": "Stop after this many failures. (Optional.)",
                         }
                     },
                     "required": ["paths"]
@@ -43,8 +52,44 @@ class PytestTool(Tool):
         }
 
     def run(self, args: Dict) -> str:
-        paths = args.get("paths", [])
-        options = args.get("options", "")
-        # Use pytest's main function to execute tests programmatically
-        result = pytest.main(paths + [options])
-        return f"Pytest execution completed with result code: {result}"
+        paths: List[str] = args.get("paths", [])
+        verbose: bool = args.get("verbose", False)
+        quiet: bool = args.get("quiet", False)
+        maxfail: int = args.get("maxfail", None)
+
+        pytest_args = []
+
+        if verbose:
+            pytest_args.append("-v")
+        if quiet:
+            pytest_args.append("-q")
+        if maxfail is not None:
+            pytest_args.append(f"--maxfail={maxfail}")
+
+        pytest_args += paths
+
+        # Capture stdout and stderr
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        saved_stdout = sys.stdout
+        saved_stderr = sys.stderr
+        sys.stdout = stdout
+        sys.stderr = stderr
+
+        try:
+            import pytest
+            exit_code = pytest.main(pytest_args)
+        finally:
+            sys.stdout = saved_stdout
+            sys.stderr = saved_stderr
+
+        out = stdout.getvalue()
+        err = stderr.getvalue()
+
+        result_text = f"Exit code: {exit_code}\n\n"
+        if out.strip():
+            result_text += f"STDOUT:\n{out}\n"
+        if err.strip():
+            result_text += f"STDERR:\n{err}\n"
+
+        return result_text.strip()
