@@ -7,6 +7,7 @@ from vibecoder.tools.apply_patch import ApplyPatchTool
 from vibecoder.tools.pytest_tool import PytestTool
 from vibecoder.tools.git_tool import GitTool
 from vibecoder.tools.grep import GrepTool
+from vibecoder.tools.move import MoveTool
 
 from jinja2 import Template
 import pathlib
@@ -27,6 +28,7 @@ def build_swe_agent() -> Agent:
         PytestTool(),
         GrepTool(),
         GitTool(),
+        MoveTool()  # Add the new tool here
     ]
 
     tool_descriptions = "\n".join(t.display_signature for t in tools)
