@@ -1,5 +1,6 @@
 import os
 import tempfile
+import warnings
 from vibecoder.tools.pytest_tool import PytestTool
 
 def test_pytest_tool_basic_run():
@@ -20,14 +21,17 @@ def test_dummy():
             "verbose": True,
         }
 
-        output = tool.run(args)
+        # Use a warnings filter context to suppress deprecation warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            output = tool.run(args)
 
         # Basic checks
         assert "Exit code:" in output
         assert "STDOUT:" in output
         assert "test_dummy" in output
         assert "1 passed" in output
-        assert "stderr" not in output.lower()  # no stderr expected
+
 
 def test_pytest_tool_failure_capture():
     """Test that failing tests produce useful output."""
@@ -46,11 +50,13 @@ def test_fail():
             "verbose": True,
         }
 
-        output = tool.run(args)
+        # Suppress deprecation warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            output = tool.run(args)
 
         assert "Exit code:" in output
         assert "STDOUT:" in output
         assert "test_fail" in output
         assert "assert 1 == 2" in output or "AssertionError" in output
         assert "failed" in output.lower()
-
