@@ -68,28 +68,23 @@ class PytestTool(Tool):
 
         pytest_args += paths
 
-        # Capture stdout and stderr
-        stdout = io.StringIO()
-        stderr = io.StringIO()
-        saved_stdout = sys.stdout
-        saved_stderr = sys.stderr
-        sys.stdout = stdout
-        sys.stderr = stderr
+        # Assemble the full command
+        command = ["pytest"] + pytest_args
 
         try:
-            import pytest
-            exit_code = pytest.main(pytest_args)
-        finally:
-            sys.stdout = saved_stdout
-            sys.stderr = saved_stderr
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False  # don't raise an exception even if tests fail
+            )
+        except Exception as e:
+            return f"[Error running pytest: {e}]"
 
-        out = stdout.getvalue()
-        err = stderr.getvalue()
-
-        result_text = f"Exit code: {exit_code}\n\n"
-        if out.strip():
-            result_text += f"STDOUT:\n{out}\n"
-        if err.strip():
-            result_text += f"STDERR:\n{err}\n"
+        result_text = f"Exit code: {result.returncode}\n\n"
+        if result.stdout.strip():
+            result_text += f"STDOUT:\n{result.stdout}\n"
+        if result.stderr.strip():
+            result_text += f"STDERR:\n{result.stderr}\n"
 
         return result_text.strip()
