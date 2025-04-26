@@ -168,7 +168,9 @@ class REPLContextManager:
 
     async def open_editor_and_ask(self):
         template = self._prepare_editor_template()
-        edited_text = await self._open_editor(template)
+        # Use run_in_executor to open an editor without blocking the event loop
+        loop = asyncio.get_running_loop()
+        edited_text = await loop.run_in_executor(None, self._open_editor_blocking, template)
 
         if edited_text:
             self.print(f"💬 $ {edited_text}")
@@ -179,6 +181,16 @@ class REPLContextManager:
         self._restart_after_edit = True
         self.app.exit()
 
+    def _open_editor_blocking(self, template_text: str) -> str:
+        """ Blocking call to open an editor using click """
+        edited_text = click.edit(text=template_text)
+        if edited_text is None:
+            return ""
+        stripped = "\n".join(
+            line for line in edited_text.splitlines()
+            if not line.lstrip().startswith("#")
+        )
+        return stripped.strip()
 
     async def start_working(self, command: str):
         try:
@@ -203,17 +215,6 @@ class REPLContextManager:
         if not self.last_output:
             return ""
         return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output.splitlines()) + "\n\n"
-
-    async def _open_editor(self, template_text: str) -> str:
-        loop = asyncio.get_running_loop()
-        edited_text = await loop.run_in_executor(None, lambda: click.edit(text=template_text))
-        if edited_text is None:
-            return ""
-        stripped = "\n".join(
-            line for line in edited_text.splitlines()
-            if not line.lstrip().startswith("#")
-        )
-        return stripped.strip()
 
     def print(self, text: str):
         # self.output_window.buffer.insert_text(text + "\n", move_cursor=True)
@@ -277,7 +278,6 @@ class REPLContextManager:
             self.update_status(f"{base_status} - {animation_frames[idx]}", animate=True)
             idx = (idx + 1) % len(animation_frames)
             await asyncio.sleep(0.5)
-        
 
 
 def main():
