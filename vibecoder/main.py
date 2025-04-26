@@ -35,6 +35,14 @@ class REPLContextManager:
         self.last_output = ""
         self._working = False
         self._interrupted = False
+        self._restart_after_edit = None
+        self._create_application()
+
+    def _create_application(self):
+        if hasattr(self, "output_window"):
+            output = self.output_window.text
+        else:
+            output = "🤖 vibecoder is starting...\n"
 
         self.output_window = TextArea(
             style="class:output",
@@ -42,7 +50,7 @@ class REPLContextManager:
             scrollbar=True,
             wrap_lines=True,
             read_only=True,
-            text="🤖 vibecoder is starting...\n",
+            text=output,
         )
 
         self.input_window = TextArea(
@@ -52,7 +60,7 @@ class REPLContextManager:
             multiline=False,
             wrap_lines=False,
             accept_handler=self.on_enter,
-            history=FileHistory(os.path.expanduser("~/.vibecoder_history")),
+            history=FileHistory(HISTORY_FILE),
         )
 
         self.layout = Layout(
@@ -79,23 +87,30 @@ class REPLContextManager:
         )
 
     async def run(self):
-        try:
-            await self.app.run_async()
-        except Exception as e:
-            self.print(f"Critical failure: {e}")
-            if self.app.is_running:
-                self.app.exit()
+        while True:
+            try:
+                await self.app.run_async()
+            except Exception as e:
+                self.print(f"⚠️ Critical failure: {e}")
+                break
+
+            if not self._restart_after_edit:
+                break
+
+            edited_text = self._restart_after_edit
+            self._restart_after_edit = None
+
+            self._create_application()
 
     def on_enter(self, buffer):
         try:
             text = buffer.text
-            buffer.text = ""
 
             if text.strip():
+                buffer.text = ""
                 self.input_window.buffer.history.append_string(text)
                 self.print(f"💬 $ {text}")
-
-            asyncio.create_task(self.handle_line(text))
+                asyncio.create_task(self.handle_line(text))
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -116,7 +131,7 @@ class REPLContextManager:
     async def handle_command(self, command: str):
         if command in {"quit", "exit"}:
             self.print("👋 Exiting vibecoder.")
-            await self.app.exit()
+            self.app.exit()
         elif command == "edit":
             await self.open_editor_and_ask()
         elif command.startswith("work"):
@@ -134,17 +149,23 @@ class REPLContextManager:
                 self.print(f"🤖 SWE: {output}")
                 outputs.append(output)
             self.last_output = "\n".join(outputs)
-
         except Exception as e:
             tb = traceback.format_exc()
             self.print(f"⚠️ Exception during ask:\n{tb}")
 
     async def open_editor_and_ask(self):
         template = self._prepare_editor_template()
-        edited_text = self._open_editor(template)
+        edited_text = await self._open_editor(template)
+
         if edited_text:
             self.print(f"💬 $ {edited_text}")
+            self.input_window.buffer.history.append_string(edited_text)
             await self.ask(edited_text)
+
+        # After finishing the ask, request an application restart
+        self._restart_after_edit = True
+        self.app.exit()
+
 
     async def start_working(self, command: str):
         try:
@@ -170,9 +191,9 @@ class REPLContextManager:
             return ""
         return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output.splitlines()) + "\n\n"
 
-    def _open_editor(self, template_text: str) -> str:
-        """Opens $EDITOR with optional template text, strips comment lines on return."""
-        edited_text = click.edit(text=template_text)
+    async def _open_editor(self, template_text: str) -> str:
+        loop = asyncio.get_running_loop()
+        edited_text = await loop.run_in_executor(None, lambda: click.edit(text=template_text))
         if edited_text is None:
             return ""
         stripped = "\n".join(
