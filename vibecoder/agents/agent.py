@@ -2,12 +2,12 @@ import json
 import os
 
 from dotenv import load_dotenv
-from typing import Dict, Iterator
-from openai import OpenAI
+from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
+from openai import OpenAI, AsyncOpenAI
 from vibecoder.tools.base import Tool
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
 
 class Agent:
     def __init__(self, system_prompt: str, tools: Dict[str, Tool], model: str = "gpt-4o"):
@@ -17,12 +17,12 @@ class Agent:
             {"role": "system", "content": system_prompt}
         ]
 
-    def ask(self, user_input: str) -> Iterator[str]:
+    async def ask(self, user_input: str) -> AsyncIterator[str]:
         self.messages.append({"role": "user", "content": user_input})
 
         while True:
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=self.model,
                 messages=self.messages,
                 stream=False,
