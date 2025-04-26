@@ -30,6 +30,10 @@ class WriteFileTool(Tool):
                         "content": {
                             "type": "string",
                             "description": "The new contents to write into the file"
+                        },
+                        "append": {
+                            "type": "boolean",
+                            "description": "If true, append the content instead of overwriting."
                         }
                     },
                     "required": ["path", "content"]
@@ -40,6 +44,7 @@ class WriteFileTool(Tool):
     def run(self, args: Dict) -> str:
         path = args.get("path")
         content = args.get("content")
+        append = args.get("append", False)
 
         if path is None or content is None:
             return "[Error: Missing 'path' or 'content' argument.]"
@@ -48,7 +53,8 @@ class WriteFileTool(Tool):
             directory = os.path.dirname(path)
             if directory:
                 os.makedirs(directory, exist_ok=True)
-            with open(path, "w") as f:
+            mode = "a" if append else "w"
+            with open(path, mode) as f:
                 f.write(content)
             return f"[Successfully wrote to '{path}']"
         except Exception as e:
