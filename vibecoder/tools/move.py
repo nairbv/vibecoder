@@ -8,6 +8,7 @@ class MoveTool(Tool):
     @property
     def signature(self) -> dict:
         return {
+            "type": "function",
             "function": {
                 "name": "move",
                 "parameters": {
