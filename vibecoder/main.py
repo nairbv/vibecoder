@@ -149,11 +149,44 @@ class REPLContextManager:
             await self.open_editor_and_ask()
         elif command.startswith("work"):
             await self.start_working(command)
+        elif command.startswith("save"):
+            user_instruction = command[4:].strip()  # Extract user instructions after /save
+            await self.save_context(user_instruction)
         elif command == "interrupt":
             self._interrupted = True
             self.print("🛑 Interrupt signal sent. Will yield at next pause.")
         else:
             self.print(f"⚠️ Unknown command: /{command}")
+
+    async def save_context(self, user_text: str):
+        """Summarize the current session context and store it in the designated markdown file."""
+        prompt_path = 'vibecoder/prompts/save_context.md'
+        session_file = '.vibecoder/swe_session.md'
+
+        if not os.path.exists('.vibecoder'):
+            os.makedirs('.vibecoder')
+
+        with open(prompt_path, 'r') as file:
+            prompt = file.read()
+        if user_text:
+           user_instruction = f'User instruction: {user_text}\n'
+        else:
+           user_instruction = ''
+        summary_request = f"{prompt}\n{user_instruction}"
+
+        # Properly handle the async generator to accumulate results
+        outputs = []
+        try:
+            async for part in self.agent.ask(summary_request):
+                outputs.append(part)
+            summary = "\n".join(outputs)
+        except Exception as e:
+            self.print(f"⚠️ Error gathering async generator output: {str(e)}")
+            return
+
+        with open(session_file, 'w') as file:
+            file.write(summary)
+        self.print("✅ Context successfully saved.")
 
     async def ask(self, line: str):
         try:
@@ -217,7 +250,6 @@ class REPLContextManager:
         return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output.splitlines()) + "\n\n"
 
     def print(self, text: str):
-        # self.output_window.buffer.insert_text(text + "\n", move_cursor=True)
         self.output_window.text += text + "\n"
         self.output_window.buffer.cursor_position = len(self.output_window.buffer.text)
 
@@ -230,35 +262,19 @@ class REPLContextManager:
         lines = buffer.text[:buffer.cursor_position].splitlines()
         lines_to_scroll = 20  # Scroll up about 20 lines
         new_line_index = max(0, len(lines) - lines_to_scroll)
-        new_pos = sum(len(line) + 1 for line in lines[:new_line_index])  # +1 for each newline character
+        new_pos = sum(len(line) + 1 for line in lines[:new_line_index])
         buffer.cursor_position = new_pos
-
-        # couldn't get this to work
-        # window = self.output_window.window
-        # if window and window.render_info:
-        #     scroll_amount = window.render_info.window_height // 2  # Half a screen
-        #     window.vertical_scroll = max(0, (window.vertical_scroll or 0) - scroll_amount)
-        #     event.app.invalidate()
 
     def handle_pagedown(self, event):
         buffer = self.output_window.buffer
         lines = buffer.text[:buffer.cursor_position].splitlines()
         total_lines = buffer.text.count("\n")
-        lines_to_scroll = 20  # Scroll down about 20 lines
+        lines_to_scroll = 20
         new_line_index = min(total_lines, len(lines) + lines_to_scroll)
         new_pos = sum(len(line) + 1 for line in buffer.text.splitlines()[:new_line_index])
         buffer.cursor_position = new_pos
 
-        # couldn't get this to work
-        # window = self.output_window.window
-        # if window and window.render_info:
-        #     scroll_amount = window.render_info.window_height // 2  # Half a screen
-        #     max_scroll = window.render_info.content_height - window.render_info.window_height
-        #     window.vertical_scroll = min(max_scroll, (window.vertical_scroll or 0) + scroll_amount)
-        #     event.app.invalidate()
-
     def update_status(self, text, animate=False):
-        # Properly replace the existing text
         self.status_bar.text = f"Status: {text}"
         self.status_bar.buffer.cursor_position = 0
 
@@ -270,7 +286,6 @@ class REPLContextManager:
                 self._status_task.cancel()
 
     async def start_status_animation(self):
-        """Start a looping task to update the status bar for animations."""
         animation_frames = ['|', '/', '-', '\\']
         idx = 0
         while True:

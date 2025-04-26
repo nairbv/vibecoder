@@ -1,0 +1,1 @@
+Please summarize the current session, distilling key points and context needed to resume work smoothly. Include any tasks in progress, decisions made, and other relevant project details. Keep the summary concise but informative to ensure continuity. If provided, adhere to specific user instructions included with the request.
