@@ -7,12 +7,12 @@ from openai import OpenAI, AsyncOpenAI
 from vibecoder.tools.base import Tool
 
 load_dotenv()
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
 
 class Agent:
-    def __init__(self, system_prompt: str, tools: Dict[str, Tool], model: str = "gpt-4o"):
+    def __init__(self, system_prompt: str, tools: Dict[str, Tool], model: str = "gpt-4o", client=None):
         self.model = model
         self.tools = tools
+        self.client = client or AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
         self.messages = [
             {"role": "system", "content": system_prompt}
         ]
@@ -22,7 +22,7 @@ class Agent:
 
         while True:
 
-            response = await client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=self.messages,
                 stream=False,
