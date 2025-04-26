@@ -2,7 +2,7 @@
 
 ## Files
 
-Each tools has:
+Each tool has:
 
 * A unit test in tests/tools/test_`tool_name`_tool.py
 * A file describing its usage in vibecoder/prompts/tools/`tool_name`.md
@@ -26,3 +26,7 @@ Generally speaking, when adding a tool, don't just dump raw text into a shell co
     Paths should not have leading '/' and should not have `..`. The agent is only permitted to view the working directory.
 
 Make sure relevant output is captured and returned to the agent.
+
+## Global Tool List
+
+All tools should be defined in the `vibecoder/tools` directory. They are automatically collected using the `get_all_tools` function from the `__init__.py` module in the same directory. This ensures any new tool will automatically be included in the validation tests. Therefore, ensure all new tools subclass the `Tool` base class and implement the necessary methods. This ensures seamless integration into our testing framework.

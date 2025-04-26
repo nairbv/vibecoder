@@ -1,0 +1,22 @@
+import os
+import importlib
+from typing import List
+from vibecoder.tools.base import Tool
+
+TOOLS_DIR = os.path.dirname(__file__)
+
+
+def get_all_tools() -> List[Tool]:
+    tool_instances = []
+    tools = [
+        f.split('.')[0] for f in os.listdir(TOOLS_DIR)
+        if f.endswith('.py') and f not in ('__init__.py', 'base.py')
+    ]
+
+    for tool in tools:
+        module = importlib.import_module(f'vibecoder.tools.{tool}')
+        for attr in dir(module):
+            obj = getattr(module, attr)
+            if isinstance(obj, type) and issubclass(obj, Tool) and obj is not Tool:
+                tool_instances.append(obj())
+    return tool_instances
