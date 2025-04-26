@@ -26,6 +26,16 @@ class ReadFileTool(Tool):
                         "path": {
                             "type": "string",
                             "description": "The path to the file to read"
+                        },
+                        "start": {
+                            "type": "integer",
+                            "description": "Start reading the file from this line number (inclusive)",
+                            "minimum": 0
+                        },
+                        "end": {
+                            "type": "integer",
+                            "description": "Stop reading the file at this line number (exclusive)",
+                            "minimum": 0
                         }
                     },
                     "required": ["path"]
@@ -35,8 +45,15 @@ class ReadFileTool(Tool):
 
     def run(self, args: Dict) -> str:
         path = args.get("path")
+        start = args.get("start", None)
+        end = args.get("end", None)
         try:
             with open(path, "r") as f:
-                return f.read()
+                lines = f.readlines()
+                # Adjust line number based on 1-indexed argument
+                start = start or 0
+                end = end or len(lines)
+                return ''.join(lines[start:end])
+                
         except Exception as e:
             return f"[Error reading file '{path}': {e}]"
