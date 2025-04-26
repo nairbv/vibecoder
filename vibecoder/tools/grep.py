@@ -18,6 +18,7 @@ class GrepTool(Tool):
     @property
     def signature(self) -> Dict:
         return {
+            "type": "function",
             "function": {
                 "name": "grep",
                 "description": self.prompt_description,
@@ -43,28 +44,32 @@ class GrepTool(Tool):
         ignore_case = args.get('ignore_case', False)
 
         # Validate and sanitize inputs
-        # Allow paths for testing or if they contain 'vibecoder'
-        invalid_paths = [p for p in paths if not (p.startswith('/var/folders') or (p.startswith('/') and 'vibecoder' in p))]
-        if invalid_paths:
-            raise ValueError(f"Invalid paths: {invalid_paths}")
-        safe_paths = [shlex.quote(p.rstrip('/')) for p in paths if p.startswith('/var/folders') or (p.startswith('/') and 'vibecoder' in p) or (not p.startswith('/') and '..' not in p)]
+        safe_paths = []
+        for p in paths:
+            if p.startswith("/") and "tmp" not in p:
+                raise ValueError(f"Unsafe absolute path traversal: {p}")
+            if ".." in p:
+                raise ValueError(f"Unsafe relative path traversal: {p}")
+            safe_paths.append(shlex.quote(p.rstrip('/')))
 
         if not safe_paths:
-            return ""
+            return "[Error: No valid paths provided!]"
 
         # Prepare the grep command
         cmd = ['grep', '-r']
         if ignore_case:
             cmd.append('-i')
         if include_pattern:
-            cmd.extend(['--include', include_pattern])
+            cmd.extend(['--include', shlex.quote(include_pattern)])
         if ignore_patterns:
             for ip in ignore_patterns:
                 cmd.append(f"--exclude={shlex.quote(ip)}")
 
-        # Add pattern and paths
-        cmd.extend([pattern] + safe_paths)
+        # Add the search pattern and paths
+        cmd.append(shlex.quote(pattern))
+        cmd.extend(safe_paths)
 
         # Execute the command
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-        return result.stdout if result.returncode == 0 else result.stderr
+        result = subprocess.run(" ".join(cmd), shell=True, capture_output=True, text=True)
+
+        return result.stdout if result.returncode in (0, 1) else result.stderr

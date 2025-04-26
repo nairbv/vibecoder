@@ -47,7 +47,7 @@ class TestGrepTool(unittest.TestCase):
 
     def test_empty_paths(self):
         result = self.grep_tool.run({"pattern": 'test', "paths": []})
-        self.assertEqual(result, '')  # Should return empty if no paths are provided
+        self.assertEqual(result, '[Error: No valid paths provided!]')
 
 if __name__ == '__main__':
     unittest.main()
