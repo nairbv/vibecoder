@@ -1,5 +1,6 @@
 import os
 import asyncio
+import sys
 import threading
 import traceback
 import click
@@ -9,12 +10,17 @@ from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.layout import Layout, HSplit, Window
-from prompt_toolkit.layout.controls import BufferControl
+from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ScrollbarMargin
+from prompt_toolkit.layout.scrollable_pane import ScrollOffsets
 from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.styles import Style
+from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.data_structures import Point
+
 
 from vibecoder.agents.swe import build_swe_agent
 from vibecoder.agents.mock_agent import MockAgent
@@ -52,74 +58,79 @@ class REPLContextManager:
             read_only=True,
             text="Status: Ready"
         )
+        self._output_lines = []
+        self._scroll_pos = None
         self._create_application()
 
     def _create_application(self):
-        if hasattr(self, "output_window"):
-            output = self.output_window.text
-        else:
-            output = "🤖 vibecoder is starting...\n"
+        try:
+            if not self._output_lines:
+                self._output_lines.append(('assist', '🤖 vibecoder is starting...\n'))
+            self.output_control = FormattedTextControl(
+                text=lambda: [(f'class:{style}', line) for style, line in self._output_lines],
+                focusable=True,
+                get_cursor_position=self._get_output_cursor_position,
+                )
+            self.output_control.preferred_height = lambda width, height, ui_content, config: len(self._output_lines)
 
-        self.output_window = TextArea(
-            style="class:output",
-            focusable=False,
-            scrollbar=True,
-            wrap_lines=True,
-            read_only=True,
-            text=output,
-        )
+            self.output_window = Window(
+                content=self.output_control,
+                style="class:output",
+                wrap_lines=True,
+                right_margins=[ScrollbarMargin(display_arrows=True)],
+                height=Dimension(weight=1),
+                always_hide_cursor=True,
+                scroll_offsets=ScrollOffsets(top=3, bottom=3),
+            )
+            self.input_window = TextArea(
+                style="class:input",
+                prompt="💬 $ ",
+                height=1,
+                multiline=False,
+                wrap_lines=False,
+                accept_handler=self.on_enter,
+                history=FileHistory(HISTORY_FILE),
+            )
+            self.layout = Layout(
+                HSplit([
+                    self.status_bar,
+                    self.output_window,
+                    Window(height=1, char="-"),  # Separator line
+                    self.input_window,
+                ]),
+                focused_element=self.input_window,
+            )
+            self.kb = KeyBindings()
+            self.kb.add("c-c")(self.handle_ctrl_c)
+            self.kb.add("pageup")(self.handle_pageup)
+            self.kb.add("pagedown")(self.handle_pagedown)
+            self.style = Style.from_dict({
+                "output": "bg:#000000 #ffffff",
+                "input": "bg:#222222 #00ff00",
+                "status": "bg:#444444 #ffffff bold",
+                "toolcall": "ansicyan",
+                "usermsg": "ansigreen",
+                "assist": "bold #ffffff",
+            })
+            self.app = Application(
+                layout=self.layout,
+                key_bindings=self.kb,
+                style=self.style,
+                full_screen=True,
+            )
+        except Exception as e:
+            print(e, file=sys.stderr)
+            self.print(e)
 
-        self.input_window = TextArea(
-            style="class:input",
-            prompt="💬 $ ",
-            height=1,
-            multiline=False,
-            wrap_lines=False,
-            accept_handler=self.on_enter,
-            history=FileHistory(HISTORY_FILE),
-        )
+    def _get_output_cursor_position(self):
+        y = self._scroll_pos or len(self._output_lines) - 1
+        return Point(0, y)
 
-        self.layout = Layout(
-            HSplit([
-                self.status_bar,
-                self.output_window,
-                Window(height=1, char="-"),  # Separator line
-                self.input_window,
-            ]),
-        )
-
-        self.kb = KeyBindings()
-        self.kb.add("c-c")(self.handle_ctrl_c)
-        self.kb.add("pageup")(self.handle_pageup)
-        self.kb.add("pagedown")(self.handle_pagedown)
-
-        self.style = Style.from_dict({
-            "output": "bg:#111111 #ffffff",
-            "input": "bg:#222222 #00ff00",
-            "status": "bg:#444444 #ffffff bold",
-        })
-
-        self.app = Application(
-            layout=self.layout,
-            key_bindings=self.kb,
-            style=self.style,
-            full_screen=True,
-        )
-
-    async def run(self):
-        while True:
-            try:
-                await self.app.run_async()
-            except Exception as e:
-                self.print(f"⚠️ Critical failure: {e}")
-                break
-
-            if not self._restart_after_edit:
-                break
-
-            self._restart_after_edit = None
-
-            self._create_application()
+    def print(self, text: str, style: str = "assist"):
+        self._output_lines.append((style, text.rstrip() + "\n"))
+        if len(self._output_lines) > 10000:
+            self._output_lines = self._output_lines[-1000:]
+        get_app().invalidate()
 
     def on_enter(self, buffer):
         try:
@@ -127,15 +138,26 @@ class REPLContextManager:
             text = text.strip()
             if text:
                 self.input_window.buffer.history.append_string(text)
-                self.print(f"💬 $ {text}")
+                self.print(f"💬 $ {text}", style="usermsg")
                 asyncio.create_task(self.handle_line(text))
             buffer.text = ""
-
         except Exception as e:
             tb = traceback.format_exc()
             self.print(f"⚠️ Exception occurred:\n{tb}")
             if text == "/quit":
                 exit()
+
+    async def run(self):
+        while True:
+            try:
+                await self.app.run_async()
+            except Exception as e:
+                print(f"⚠️ Critical failure: {e}")
+                break
+            if not self._restart_after_edit:
+                break
+            self._restart_after_edit = None
+            self._create_application()
 
     async def handle_line(self, line: str):
         try:
@@ -176,13 +198,10 @@ class REPLContextManager:
             self.print(f"⚠️ Unknown command: /{command}")
 
     async def save_context(self, user_text: str):
-        """Summarize the current session context and store it in the designated markdown file."""
         prompt_path = 'vibecoder/prompts/save_context.md'
         session_file = '.vibecoder/swe_session.md'
-
         if not os.path.exists('.vibecoder'):
             os.makedirs('.vibecoder')
-
         with open(prompt_path, 'r') as file:
             prompt = file.read()
         if user_text:
@@ -190,8 +209,6 @@ class REPLContextManager:
         else:
            user_instruction = ''
         summary_request = f"{prompt}\n{user_instruction}"
-
-        # Properly handle the async generator to accumulate results
         outputs = []
         try:
             async for part in self.agent.ask(summary_request):
@@ -200,7 +217,6 @@ class REPLContextManager:
         except Exception as e:
             self.print(f"⚠️ Error gathering async generator output: {str(e)}")
             return
-
         with open(session_file, 'w') as file:
             file.write(summary)
         self.print("✅ Context successfully saved.")
@@ -210,27 +226,24 @@ class REPLContextManager:
         if role == self.agent_type:
             self.print(f"🤖 Already using {role} agent.")
             return
-
         if role in self.agents_dict:
             if not self.agents_dict[role]:
                 if role == "swe":
                     self.agents_dict[role] = build_swe_agent()
                 elif role == "mock":
-                    self.agents_dict[role] = MockAgent(tools=None)  # Initialize with tools if needed
-
+                    self.agents_dict[role] = MockAgent(tools=None)
             self.agent = self.agents_dict[role]
             self.agent_type = role
         else:
             self.print(f"⚠️ Unknown agent role: {role}")
             return
-
         self.print(f"✅ Switched to {role} agent.")
 
     async def ask(self, line: str):
         try:
             outputs = []
             async for output in self.agent.ask(line):
-                self.print(f"🤖 SWE: {output}")
+                self.print(f"🤖 SWE: {output}", style="toolcall")
                 outputs.append(output)
             self.last_output = "\n".join(outputs)
         except Exception as e:
@@ -239,21 +252,16 @@ class REPLContextManager:
 
     async def open_editor_and_ask(self):
         template = self._prepare_editor_template()
-        # Use run_in_executor to open an editor without blocking the event loop
         loop = asyncio.get_running_loop()
         edited_text = await loop.run_in_executor(None, self._open_editor_blocking, template)
-
         if edited_text:
-            self.print(f"💬 $ {edited_text}")
+            self.print(f"💬 $ {edited_text}", style="usermsg")
             self.input_window.buffer.history.append_string(edited_text)
             await self.ask(edited_text)
-
-        # After finishing the ask, request an application restart
         self._restart_after_edit = True
         self.app.exit()
 
     def _open_editor_blocking(self, template_text: str) -> str:
-        """ Blocking call to open an editor using click """
         edited_text = click.edit(text=template_text)
         if edited_text is None:
             return ""
@@ -269,22 +277,16 @@ class REPLContextManager:
             minutes = int(parts[1]) if len(parts) > 1 else 1
         except Exception:
             minutes = 1
-
         self.print(f"⚡ Entering autonomous work mode for {minutes} minutes...")
         self.status = WorkingStatus(duration=minutes * 60)
-
         self._working = True
         self._interrupted = False
         end_time = asyncio.get_event_loop().time() + (minutes * 60)
-
         continue_msg = "Do what you think is best. Keep going until you've solved the problem. Think carefully, brainstorm, and consider your tools if you get stuck."
-
         while self._working and not self._interrupted and asyncio.get_event_loop().time() < end_time:
-            self.print(f"💬 $ {continue_msg}")
+            self.print(f"💬 $ {continue_msg}", style="usermsg")
             await self.ask(continue_msg)
-
         self.status = WaitingStatus()
-
         self.print("✅ Finished autonomous work mode.")
 
     def _prepare_editor_template(self) -> str:
@@ -292,39 +294,38 @@ class REPLContextManager:
             return ""
         return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output.splitlines()) + "\n\n"
 
-    def print(self, text: str):
-        text = text.rstrip('\n')  # Remove trailing newlines
-        self.output_window.text += text + "\n"
-        self.output_window.buffer.cursor_position = len(self.output_window.buffer.text)
-
     def handle_ctrl_c(self, event):
         self._interrupted = True
         self.print("🛑 Ctrl+C interrupt received.")
+        event.app.exit()
+
 
     def handle_pageup(self, event):
-        buffer = self.output_window.buffer
-        lines = buffer.text[:buffer.cursor_position].splitlines()
-        lines_to_scroll = 20  # Scroll up about 20 lines
-        new_line_index = max(0, len(lines) - lines_to_scroll)
-        new_pos = sum(len(line) + 1 for line in lines[:new_line_index])
-        buffer.cursor_position = new_pos
+        pos = self._scroll_pos
+        if pos is None:
+            pos = len(self._output_lines) - 1
+        pos -= 20
+        if pos < 0:
+            pos = 0
+        self._scroll_pos = pos
+        self.app.invalidate()
 
     def handle_pagedown(self, event):
-        buffer = self.output_window.buffer
-        lines = buffer.text[:buffer.cursor_position].splitlines()
-        total_lines = buffer.text.count("\n")
-        lines_to_scroll = 20
-        new_line_index = min(total_lines, len(lines) + lines_to_scroll)
-        new_pos = sum(len(line) + 1 for line in buffer.text.splitlines()[:new_line_index])
-        buffer.cursor_position = new_pos
+        if self._scroll_pos is None:
+            return
+        pos = self._scroll_pos
+        pos += 20
+        if pos >= len(self._output_lines) - 1:
+            pos = None
+        self._scroll_pos = pos
+        self.app.invalidate()
+
 
     def update_status(self, status):
         self.status = status
         self.status_bar.text = f"Status: {self.status.status_line()}"
         self.status_bar.buffer.cursor_position = 0
-
         should_animate = self.status.is_busy()
-
         if should_animate:
             if self._status_task is None or self._status_task.cancelled():
                 self._status_task = asyncio.create_task(self.start_status_animation())
@@ -346,7 +347,5 @@ def main():
     repl = REPLContextManager()
     asyncio.run(repl.run())
 
-
 if __name__ == "__main__":
     main()
-
