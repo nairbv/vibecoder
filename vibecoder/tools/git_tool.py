@@ -7,7 +7,7 @@ PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
 
 class GitTool(Tool):
     name = "git_tool"
-    supported_commands = ["status", "log", "diff", "show", "grep"]
+    supported_commands = ["status", "log", "diff", "show", "grep", "checkout"]
 
     @property
     def prompt_description(self) -> str:
@@ -27,7 +27,7 @@ class GitTool(Tool):
                     "properties": {
                         "command": {
                             "type": "string",
-                            "description": "The git command to execute (e.g., 'status', 'log', 'diff')."
+                            "description": f"The git command to execute. Available commands: {', '.join(self.supported_commands)}."
                         },
                         "options": {
                             "type": "array",

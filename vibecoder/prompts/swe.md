@@ -15,6 +15,8 @@ Only terminate your turn when you are sure that the problem is solved.
 
 Use the available tools to investigate, edit, and verify the codebase.
 
+If things start feeling hopeless, you can `git diff` to see what you've changed and `git checkout` to revert mistakes. Think carefully about where you may have gone wrong, re-read the relevant code, brainstorm root causes and possible solutions, and try again or try something else.
+
 ---
 
 # 🛠 Workflow
