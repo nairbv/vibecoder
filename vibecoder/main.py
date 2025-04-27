@@ -233,14 +233,17 @@ class REPLContextManager:
             minutes = 1
 
         self.print(f"⚡ Entering autonomous work mode for {minutes} minutes...")
-        self.update_status("⚡ Working...", animate=True)
+        self.update_status("⚡ Working...", animate=True, base_time=asyncio.get_event_loop().time(), total_duration=minutes * 60)
 
         self._working = True
         self._interrupted = False
         end_time = asyncio.get_event_loop().time() + (minutes * 60)
 
+        continue_msg = "Do what you think is best. Keep going until you've solved the problem. Think carefully, brainstorm, and consider your tools if you get stuck."
+
         while self._working and not self._interrupted and asyncio.get_event_loop().time() < end_time:
-            await self.ask("keep going")
+            self.print(f"💬 $ {continue_msg}")
+            await self.ask(continue_msg)
 
         self.update_status("👂 Waiting for input...", animate=False)
         self._working = False
@@ -278,23 +281,30 @@ class REPLContextManager:
         new_pos = sum(len(line) + 1 for line in buffer.text.splitlines()[:new_line_index])
         buffer.cursor_position = new_pos
 
-    def update_status(self, text, animate=False):
+    def update_status(self, text, animate=False, base_time=None, total_duration=None):
         self.status_bar.text = f"Status: {text}"
         self.status_bar.buffer.cursor_position = 0
 
         if animate:
             if self._status_task is None or self._status_task.cancelled():
-                self._status_task = asyncio.create_task(self.start_status_animation())
+                self._status_task = asyncio.create_task(self.start_status_animation(base_time, total_duration))
         else:
             if self._status_task:
                 self._status_task.cancel()
 
-    async def start_status_animation(self):
+    async def start_status_animation(self, base_time=None, total_duration=None):
         animation_frames = ['|', '/', '-', '\\']
         idx = 0
         while True:
-            base_status = self.status_bar.text.partition(" - ")[0].replace("Status: ", "")
-            self.update_status(f"{base_status} - {animation_frames[idx]}", animate=True)
+            current_time = asyncio.get_event_loop().time()
+            remaining_time = int(base_time + total_duration - current_time) if total_duration else None
+            if remaining_time is not None:
+                minutes_left, seconds_left = divmod(remaining_time, 60)
+                time_display = f"⏳ {minutes_left:02}:{seconds_left:02}"
+            else:
+                time_display = ""
+            base_status = "⚡ Working"
+            self.update_status(f"{base_status} {time_display} - {animation_frames[idx]}", animate=True)
             idx = (idx + 1) % len(animation_frames)
             await asyncio.sleep(0.5)
 
