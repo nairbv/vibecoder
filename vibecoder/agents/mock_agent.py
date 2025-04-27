@@ -3,9 +3,14 @@ from typing import AsyncIterator
 import random
 
 class MockAgent:
-    def __init__(self, tools):
+    def __init__(self, tools, model="default-model"):
         self.tools = tools
+        self.model = model
         self.messages = []
+
+    def set_model(self, model: str):
+        """Set a new model for the mock agent."""
+        self.model = model
 
     async def ask(self, user_input: str) -> AsyncIterator[str]:
         self.messages.append({"role": "user", "content": user_input})

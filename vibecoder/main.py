@@ -37,7 +37,7 @@ class REPLContextManager:
         self.agent_type = 'swe'
         self.agents_dict = {
             'swe': self.agent,
-            'mock': None  # We'll instantiate on first switch
+            'mock': None  # Initialized to None; will instantiate upon first switch
         }
         self.last_output = ""
         self._working = False
@@ -165,6 +165,13 @@ class REPLContextManager:
             self.print("🛑 Interrupt signal sent. Will yield at next pause.")
         elif command.startswith("role"):
             await self.switch_role(command[5:].strip())
+        elif command.startswith("model"):
+            model_name = command[5:].strip()
+            if not model_name:
+                self.print(f"Current model: {self.agent.model}")
+            else:
+                self.agent.set_model(model_name)
+                self.print(f"✅ Model set to {model_name}.")
         else:
             self.print(f"⚠️ Unknown command: /{command}")
 

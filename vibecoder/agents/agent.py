@@ -17,6 +17,10 @@ class Agent:
             {"role": "system", "content": system_prompt}
         ]
 
+    def set_model(self, model: str):
+        """Set a new model for the agent to use."""
+        self.model = model
+
     async def ask(self, user_input: str) -> AsyncIterator[str]:
         self.messages.append({"role": "user", "content": user_input})
 
