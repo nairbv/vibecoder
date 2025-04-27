@@ -293,6 +293,7 @@ class REPLContextManager:
         return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output.splitlines()) + "\n\n"
 
     def print(self, text: str):
+        text = text.rstrip('\n')  # Remove trailing newlines
         self.output_window.text += text + "\n"
         self.output_window.buffer.cursor_position = len(self.output_window.buffer.text)
 
