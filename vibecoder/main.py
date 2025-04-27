@@ -233,6 +233,8 @@ class REPLContextManager:
             minutes = 1
 
         self.print(f"⚡ Entering autonomous work mode for {minutes} minutes...")
+        self.update_status("⚡ Working...", animate=True)
+
         self._working = True
         self._interrupted = False
         end_time = asyncio.get_event_loop().time() + (minutes * 60)
@@ -240,8 +242,10 @@ class REPLContextManager:
         while self._working and not self._interrupted and asyncio.get_event_loop().time() < end_time:
             await self.ask("keep going")
 
+        self.update_status("👂 Waiting for input...", animate=False)
         self._working = False
         self._interrupted = False
+
         self.print("✅ Finished autonomous work mode.")
 
     def _prepare_editor_template(self) -> str:
