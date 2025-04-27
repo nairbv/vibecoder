@@ -17,6 +17,7 @@ from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.styles import Style
 
 from vibecoder.agents.swe import build_swe_agent
+from vibecoder.agent_status import WorkingStatus, WaitingStatus, RespondingStatus
 
 HISTORY_FILE = os.path.expanduser("~/.vibecoder_history")
 
@@ -37,6 +38,7 @@ class REPLContextManager:
         self._interrupted = False
         self._restart_after_edit = None
         self._status_task = None
+        self.status = WaitingStatus()
         self.status_bar = TextArea(
             style="class:status",
             focusable=False,
@@ -134,9 +136,9 @@ class REPLContextManager:
             if line.startswith("/"):
                 await self.handle_command(line[1:].strip())
             else:
-                self.update_status("💭 Thinking...", animate=True)  # Update status
+                self.update_status(RespondingStatus())
                 await self.ask(line)
-                self.update_status("👂 Waiting for input...", animate=False)  # Revert
+                self.update_status(WaitingStatus())
         except Exception as e:
             tb = traceback.format_exc()
             self.print(f"⚠️ Exception occurred:\n{tb}")
@@ -233,7 +235,7 @@ class REPLContextManager:
             minutes = 1
 
         self.print(f"⚡ Entering autonomous work mode for {minutes} minutes...")
-        self.update_status("⚡ Working...", animate=True, base_time=asyncio.get_event_loop().time(), total_duration=minutes * 60)
+        self.status = WorkingStatus(duration=minutes * 60)
 
         self._working = True
         self._interrupted = False
@@ -245,9 +247,7 @@ class REPLContextManager:
             self.print(f"💬 $ {continue_msg}")
             await self.ask(continue_msg)
 
-        self.update_status("👂 Waiting for input...", animate=False)
-        self._working = False
-        self._interrupted = False
+        self.status = WaitingStatus()
 
         self.print("✅ Finished autonomous work mode.")
 
@@ -281,30 +281,26 @@ class REPLContextManager:
         new_pos = sum(len(line) + 1 for line in buffer.text.splitlines()[:new_line_index])
         buffer.cursor_position = new_pos
 
-    def update_status(self, text, animate=False, base_time=None, total_duration=None):
-        self.status_bar.text = f"Status: {text}"
+    def update_status(self, status):
+        self.status = status
+        self.status_bar.text = f"Status: {self.status.status_line()}"
         self.status_bar.buffer.cursor_position = 0
 
-        if animate:
+        should_animate = self.status.is_busy()
+
+        if should_animate:
             if self._status_task is None or self._status_task.cancelled():
-                self._status_task = asyncio.create_task(self.start_status_animation(base_time, total_duration))
+                self._status_task = asyncio.create_task(self.start_status_animation())
         else:
             if self._status_task:
                 self._status_task.cancel()
 
-    async def start_status_animation(self, base_time=None, total_duration=None):
+    async def start_status_animation(self):
         animation_frames = ['|', '/', '-', '\\']
         idx = 0
         while True:
-            current_time = asyncio.get_event_loop().time()
-            remaining_time = int(base_time + total_duration - current_time) if total_duration else None
-            if remaining_time is not None:
-                minutes_left, seconds_left = divmod(remaining_time, 60)
-                time_display = f"⏳ {minutes_left:02}:{seconds_left:02}"
-            else:
-                time_display = ""
-            base_status = "⚡ Working"
-            self.update_status(f"{base_status} {time_display} - {animation_frames[idx]}", animate=True)
+            self.status_bar.text = f"Status: {self.status.status_line()} - {animation_frames[idx]}"
+            self.status_bar.buffer.cursor_position = 0
             idx = (idx + 1) % len(animation_frames)
             await asyncio.sleep(0.5)
 
