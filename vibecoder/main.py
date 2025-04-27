@@ -17,6 +17,7 @@ from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.styles import Style
 
 from vibecoder.agents.swe import build_swe_agent
+from vibecoder.agents.mock_agent import MockAgent
 from vibecoder.agent_status import WorkingStatus, WaitingStatus, RespondingStatus
 
 HISTORY_FILE = os.path.expanduser("~/.vibecoder_history")
@@ -33,6 +34,11 @@ class REPLContextManager:
     def __init__(self):
         load_env()
         self.agent = build_swe_agent()
+        self.agent_type = 'swe'
+        self.agents_dict = {
+            'swe': self.agent,
+            'mock': None  # We'll instantiate on first switch
+        }
         self.last_output = ""
         self._working = False
         self._interrupted = False
@@ -157,6 +163,8 @@ class REPLContextManager:
         elif command == "interrupt":
             self._interrupted = True
             self.print("🛑 Interrupt signal sent. Will yield at next pause.")
+        elif command.startswith("role"):
+            await self.switch_role(command[5:].strip())
         else:
             self.print(f"⚠️ Unknown command: /{command}")
 
@@ -189,6 +197,27 @@ class REPLContextManager:
         with open(session_file, 'w') as file:
             file.write(summary)
         self.print("✅ Context successfully saved.")
+
+    async def switch_role(self, role: str):
+        role = role.lower()
+        if role == self.agent_type:
+            self.print(f"🤖 Already using {role} agent.")
+            return
+
+        if role in self.agents_dict:
+            if not self.agents_dict[role]:
+                if role == "swe":
+                    self.agents_dict[role] = build_swe_agent()
+                elif role == "mock":
+                    self.agents_dict[role] = MockAgent(tools=None)  # Initialize with tools if needed
+
+            self.agent = self.agents_dict[role]
+            self.agent_type = role
+        else:
+            self.print(f"⚠️ Unknown agent role: {role}")
+            return
+
+        self.print(f"✅ Switched to {role} agent.")
 
     async def ask(self, line: str):
         try:
@@ -312,3 +341,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
