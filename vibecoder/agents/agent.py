@@ -1,5 +1,7 @@
 import json
 import os
+from abc import ABC
+from dataclasses import dataclass
 
 from dotenv import load_dotenv
 from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
@@ -7,6 +9,19 @@ from openai import OpenAI, AsyncOpenAI
 from vibecoder.tools.base import Tool
 
 load_dotenv()
+
+class AgentOutput(ABC):
+    """Base class for all agent messages."""
+
+@dataclass
+class AgentResponse(AgentOutput):
+    message: str
+
+@dataclass
+class ToolUse(AgentOutput):
+    name: str
+    arguments: list[str]
+
 
 class Agent:
     def __init__(self, system_prompt: str, tools: Dict[str, Tool], model: str = "gpt-4o", client=None):
@@ -36,17 +51,17 @@ class Agent:
             choice = response.choices[0]
             if hasattr(choice.message, "content") and choice.message.content:
                 self.messages.append({"role": "assistant", "content": choice.message.content})
-                yield choice.message.content
+                yield AgentResponse(choice.message.content)
 
             if hasattr(choice.message, "tool_calls") and choice.message.tool_calls:
                 for call in choice.message.tool_calls:
                     tool_name = call.function.name
                     args = json.loads(call.function.arguments)
 
-                    args_str = str(args)
-                    if len(args_str) > 200:
-                        args_str = args_str[:200] + "..."
-                    yield f"{tool_name}({args_str})\n"
+                    # args_str = str(args)
+                    # if len(args_str) > 200:
+                    #     args_str = args_str[:200] + "..."
+                    yield ToolUse(name=tool_name, arguments=args) # f"{tool_name}({args_str})\n"
 
                     if tool_name not in self.tools:
                         result = f"[Tool {tool_name} not implemented]"

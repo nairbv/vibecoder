@@ -1,7 +1,7 @@
 import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock
-from vibecoder.agents.agent import Agent
+from vibecoder.agents.agent import Agent, AgentResponse
 from vibecoder.tools.base import Tool
 
 
@@ -42,5 +42,5 @@ async def test_agent_ask_with_response(mock_openai_client, mock_tool):
     agent = Agent(system_prompt="Test prompt", tools={"tool_name": mock_tool}, client=mock_openai_client)
     generator = agent.ask("user question")
     response_content = await generator.__anext__()
-    assert response_content == "response content"
+    assert response_content == AgentResponse(message="response content")
     mock_openai_client.chat.completions.create.assert_called_once()

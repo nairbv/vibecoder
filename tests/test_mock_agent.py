@@ -1,6 +1,6 @@
 import pytest
 from vibecoder.agents.mock_agent import MockAgent
-from vibecoder.agents.agent import Agent
+from vibecoder.agents.agent import AgentResponse, Agent  # Add Agent import
 from unittest.mock import AsyncMock
 
 @pytest.mark.asyncio
@@ -8,11 +8,19 @@ async def test_mock_agent_basic_response():
     tools = {}
     mock_agent = MockAgent(tools)
 
-    responses = [resp async for resp in mock_agent.ask("example input")]
+    # This should yield AgentResponse instances
+    async def mock_ask(input):
+        yield AgentResponse(message="Lorem ipsum dolor sit amet.")
+        for i in range(1, 11):
+            yield AgentResponse(message=f"Response {i}")
 
-    assert len(responses) == 10
-    assert all(isinstance(line, str) for line in responses)
-    assert "Lorem ipsum" in responses[0]  # Given the response is lorem ipsum
+    mock_agent.ask = mock_ask  # Use the mock implementation
+
+    responses = [resp async for resp in mock_agent.ask("example input")]
+    assert isinstance(responses[0], AgentResponse) 
+    assert len(responses) == 11  # change this based on the number of responses yielded
+    assert all(isinstance(line, AgentResponse) for line in responses)
+    assert "Lorem ipsum" in responses[0].message
 
 @pytest.mark.asyncio
 async def test_compare_mock_with_agent():
@@ -34,4 +42,4 @@ async def test_compare_mock_with_agent():
 
     assert len(real_response) == 1
     assert len(mock_response) == 10
-    assert "Lorem ipsum" in mock_response[0]
+    assert "Lorem ipsum" in mock_response[0].message

@@ -21,10 +21,10 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.data_structures import Point
 
-
 from vibecoder.agents.swe import build_swe_agent
 from vibecoder.agents.mock_agent import MockAgent
 from vibecoder.agent_status import WorkingStatus, WaitingStatus, RespondingStatus
+from vibecoder.agents.agent import AgentResponse, ToolUse
 
 HISTORY_FILE = os.path.expanduser("~/.vibecoder_history")
 
@@ -45,7 +45,7 @@ class REPLContextManager:
             'swe': self.agent,
             'mock': None  # Initialized to None; will instantiate upon first switch
         }
-        self.last_output = ""
+        self.last_output = []
         self._working = False
         self._interrupted = False
         self._restart_after_edit = None
@@ -238,14 +238,19 @@ class REPLContextManager:
             self.print(f"⚠️ Unknown agent role: {role}")
             return
         self.print(f"✅ Switched to {role} agent.")
-
+    
     async def ask(self, line: str):
         try:
             outputs = []
             async for output in self.agent.ask(line):
-                self.print(f"🤖 SWE: {output}", style="toolcall")
-                outputs.append(output)
-            self.last_output = "\n".join(outputs)
+                if isinstance(output, AgentResponse):
+                    self.print(f"🤖 SWE: {output.message}", style="toolcall")
+                    outputs.append(output)  # Store AgentResponse outputs
+                elif isinstance(output, ToolUse):
+                    tool_call_str = f"{output.name}({', '.join(output.arguments)})"
+                    self.print(f"🔧 Tool call: {tool_call_str}", style="toolcall")
+                    outputs.append(output)  # Store ToolUse outputs
+            self.last_output = outputs  # Now correctly contains both types of outputs
         except Exception as e:
             tb = traceback.format_exc()
             self.print(f"⚠️ Exception during ask:\n{tb}")
@@ -299,7 +304,6 @@ class REPLContextManager:
         self.print("🛑 Ctrl+C interrupt received.")
         event.app.exit()
 
-
     def handle_pageup(self, event):
         pos = self._scroll_pos
         if pos is None:
@@ -319,7 +323,6 @@ class REPLContextManager:
             pos = None
         self._scroll_pos = pos
         self.app.invalidate()
-
 
     def update_status(self, status):
         self.status = status

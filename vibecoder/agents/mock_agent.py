@@ -1,6 +1,7 @@
 import asyncio
 from typing import AsyncIterator
 import random
+from vibecoder.agents.agent import AgentResponse  # Import the AgentResponse class
 
 class MockAgent:
     def __init__(self, tools, model="default-model"):
@@ -12,7 +13,7 @@ class MockAgent:
         """Set a new model for the mock agent."""
         self.model = model
 
-    async def ask(self, user_input: str) -> AsyncIterator[str]:
+    async def ask(self, user_input: str) -> AsyncIterator[AgentResponse]:
         self.messages.append({"role": "user", "content": user_input})
 
         # Simple static response or a placeholder logic
@@ -29,9 +30,9 @@ class MockAgent:
             "Nullam varius, turpis et commodo pharetra, est eros bibendum elit."
         ]
 
-        yield lorem_ipsum[0]
+        yield AgentResponse(message=lorem_ipsum[0])  # Yield structured response
 
         for _ in range(9):
-            await asyncio.sleep(0.01)  # Fake slight delay, help REPL pacing
-            yield random.choice(lorem_ipsum)
+            await asyncio.sleep(0.01)  # Fake slight delay for pacing
+            yield AgentResponse(message=random.choice(lorem_ipsum))  # Yield structured responses
         return

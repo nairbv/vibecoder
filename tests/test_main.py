@@ -2,14 +2,14 @@ import pytest
 from vibecoder.main import REPLContextManager
 from unittest.mock import AsyncMock, patch
 import os
+from vibecoder.agents.agent import AgentResponse, ToolUse
 
 @pytest.fixture
 def setup_mock_agent():
     """Sets up a mock agent with expected behaviors for use in tests."""
     async def mock_ask(*args, **kwargs):
-        # Simulate async generator response that includes the instruction
-        yield 'This is a test response'
-        yield f'{args}'  # Include user instruction in the response
+        yield AgentResponse(message='This is a test response')
+        yield ToolUse(name='mock_tool', arguments=['arg1', 'arg2'])  # Sample tool call
     mock_agent = AsyncMock()
     mock_agent.ask = mock_ask
     return mock_agent
@@ -36,5 +36,5 @@ async def test_ask_functionality(setup_mock_agent):
         await manager.ask(test_line)
 
         # Check that the last_output was saved correctly
-        assert 'This is a test response' in manager.last_output
-
+        assert any(resp.message == 'This is a test response' for resp in manager.last_output if isinstance(resp, AgentResponse))
+        assert any(isinstance(resp, ToolUse) for resp in manager.last_output)  # Check for ToolUse instances
