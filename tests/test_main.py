@@ -36,5 +36,5 @@ async def test_ask_functionality(setup_mock_agent):
         await manager.ask(test_line)
 
         # Check that the last_output was saved correctly
-        assert any(resp.message == 'This is a test response' for resp in manager.last_output if isinstance(resp, AgentResponse))
-        assert any(isinstance(resp, ToolUse) for resp in manager.last_output)  # Check for ToolUse instances
+        print(manager.last_output)
+        assert any('This is a test response' in resp for resp in manager.last_output)

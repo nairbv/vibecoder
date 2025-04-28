@@ -253,6 +253,8 @@ class REPLContextManager:
                     text = f"🔧 Tool call: {tool_call_str}"
                     self.print(text, style="toolcall")
                     outputs.append(text)
+                else:
+                    self.print(f"unexpected response from agent: '{str(output)}'")
             self.last_output = outputs
         except Exception as e:
             tb = traceback.format_exc()
