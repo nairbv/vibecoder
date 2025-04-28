@@ -31,7 +31,7 @@ async def mock_tool():
 async def test_agent_initialization(mock_openai_client, mock_tool):
     # Use mock_openai_client and mock_tool directly without awaiting them
     agent = Agent(system_prompt="Test prompt", tools={"tool_name": mock_tool}, client=mock_openai_client)
-    assert agent.model == "gpt-4o"
+    assert agent.model == "gpt-4o-mini"
     assert agent.tools == {"tool_name": mock_tool}
     assert agent.messages == [{"role": "system", "content": "Test prompt"}]
 
