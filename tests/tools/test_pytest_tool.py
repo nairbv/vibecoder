@@ -1,6 +1,7 @@
 import os
 import tempfile
 import warnings
+
 from vibecoder.tools.pytest_tool import PytestTool
 
 
@@ -12,10 +13,12 @@ def test_pytest_tool_basic_run():
     with tempfile.TemporaryDirectory() as tmpdir:
         test_file_path = os.path.join(tmpdir, "test_dummy.py")
         with open(test_file_path, "w") as f:
-            f.write("""
+            f.write(
+                """
 def test_dummy():
     assert 1 + 1 == 2
-""")
+"""
+            )
 
         args = {
             "paths": [test_file_path],
@@ -50,10 +53,12 @@ def test_pytest_tool_failure_capture():
     with tempfile.TemporaryDirectory() as tmpdir:
         test_file_path = os.path.join(tmpdir, "test_fail.py")
         with open(test_file_path, "w") as f:
-            f.write("""
+            f.write(
+                """
 def test_fail():
     assert 1 == 2
-""")
+"""
+            )
 
         args = {
             "paths": [test_file_path],

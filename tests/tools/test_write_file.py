@@ -1,5 +1,6 @@
 from vibecoder.tools.write_file import WriteFileTool
 
+
 def test_write_file_success(tmp_path):
     """Test writing to a new file."""
 
@@ -11,6 +12,7 @@ def test_write_file_success(tmp_path):
 
     assert "Successfully" in output
     assert file_path.read_text() == content
+
 
 def test_write_file_append(tmp_path):
     """Test appending content to a file."""
@@ -27,6 +29,7 @@ def test_write_file_append(tmp_path):
     # Verify
     expected_content = initial_content + appended_content
     assert file_path.read_text() == expected_content
+
 
 def test_write_file_missing_arguments():
     """Test missing arguments returns error."""

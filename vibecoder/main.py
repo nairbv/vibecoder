@@ -1,30 +1,32 @@
-import os
 import asyncio
+import os
 import sys
 import threading
 import traceback
+
 import click
 from dotenv import load_dotenv
 from prompt_toolkit import Application
 from prompt_toolkit.application import get_app
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.data_structures import Point
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.history import FileHistory
-from prompt_toolkit.layout import Layout, HSplit, Window
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout import HSplit, Layout, Window
+from prompt_toolkit.layout.containers import VSplit
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.layout.scrollable_pane import ScrollOffsets
-from prompt_toolkit.layout.containers import VSplit
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.styles import Style
-from prompt_toolkit.layout.dimension import Dimension
-from prompt_toolkit.data_structures import Point
+from prompt_toolkit.widgets import TextArea
 
-from vibecoder.agents.swe import build_swe_agent
-from vibecoder.agents.mock_agent import MockAgent
-from vibecoder.agent_status import WorkingStatus, WaitingStatus, RespondingStatus
+from vibecoder.agent_status import (RespondingStatus, WaitingStatus,
+                                    WorkingStatus)
 from vibecoder.agents.agent import AgentResponse, ToolUse
+from vibecoder.agents.mock_agent import MockAgent
+from vibecoder.agents.swe import build_swe_agent
 
 HISTORY_FILE = os.path.expanduser("~/.vibecoder_history")
 
@@ -40,10 +42,10 @@ class REPLContextManager:
     def __init__(self):
         load_env()
         self.agent = build_swe_agent()
-        self.agent_type = 'swe'
+        self.agent_type = "swe"
         self.agents_dict = {
-            'swe': self.agent,
-            'mock': None  # Initialized to None; will instantiate upon first switch
+            "swe": self.agent,
+            "mock": None,  # Initialized to None; will instantiate upon first switch
         }
         self.last_output = []
         self._working = False
@@ -56,7 +58,7 @@ class REPLContextManager:
             focusable=False,
             height=1,
             read_only=True,
-            text="Status: Ready"
+            text="Status: Ready",
         )
         self._output_lines = []
         self._scroll_pos = None
@@ -65,13 +67,17 @@ class REPLContextManager:
     def _create_application(self):
         try:
             if not self._output_lines:
-                self._output_lines.append(('assist', '🤖 vibecoder is starting...\n'))
+                self._output_lines.append(("assist", "🤖 vibecoder is starting...\n"))
             self.output_control = FormattedTextControl(
-                text=lambda: [(f'class:{style}', line) for style, line in self._output_lines],
+                text=lambda: [
+                    (f"class:{style}", line) for style, line in self._output_lines
+                ],
                 focusable=True,
                 get_cursor_position=self._get_output_cursor_position,
-                )
-            self.output_control.preferred_height = lambda width, height, ui_content, config: len(self._output_lines)
+            )
+            self.output_control.preferred_height = (
+                lambda width, height, ui_content, config: len(self._output_lines)
+            )
 
             self.output_window = Window(
                 content=self.output_control,
@@ -92,26 +98,30 @@ class REPLContextManager:
                 history=FileHistory(HISTORY_FILE),
             )
             self.layout = Layout(
-                HSplit([
-                    self.status_bar,
-                    self.output_window,
-                    Window(height=1, char="-"),  # Separator line
-                    self.input_window,
-                ]),
+                HSplit(
+                    [
+                        self.status_bar,
+                        self.output_window,
+                        Window(height=1, char="-"),  # Separator line
+                        self.input_window,
+                    ]
+                ),
                 focused_element=self.input_window,
             )
             self.kb = KeyBindings()
             self.kb.add("c-c")(self.handle_ctrl_c)
             self.kb.add("pageup")(self.handle_pageup)
             self.kb.add("pagedown")(self.handle_pagedown)
-            self.style = Style.from_dict({
-                "output": "bg:#000000 #ffffff", # default for output text box. text responses from agent (white on black)
-                "input": "bg:#222222 #00ff00", # input text box (dark grey, green text)
-                "status": "bg:#444444 #ffffff bold", # status bar at top of window (grey background, white text)
-                "toolcall": "ansicyan", # tool calls from the agent (cyan)
-                "usermsg": "ansigreen", # message from the user (green)
-                "application": "bold #ffffff", # application messages like commands and exceptions (bold white)
-            })
+            self.style = Style.from_dict(
+                {
+                    "output": "bg:#000000 #ffffff",  # default for output text box. text responses from agent (white on black)
+                    "input": "bg:#222222 #00ff00",  # input text box (dark grey, green text)
+                    "status": "bg:#444444 #ffffff bold",  # status bar at top of window (grey background, white text)
+                    "toolcall": "ansicyan",  # tool calls from the agent (cyan)
+                    "usermsg": "ansigreen",  # message from the user (green)
+                    "application": "bold #ffffff",  # application messages like commands and exceptions (bold white)
+                }
+            )
             self.app = Application(
                 layout=self.layout,
                 key_bindings=self.kb,
@@ -180,7 +190,9 @@ class REPLContextManager:
         elif command.startswith("work"):
             await self.start_working(command)
         elif command.startswith("save"):
-            user_instruction = command[4:].strip()  # Extract user instructions after /save
+            user_instruction = command[
+                4:
+            ].strip()  # Extract user instructions after /save
             await self.save_context(user_instruction)
         elif command == "interrupt":
             self._interrupted = True
@@ -198,16 +210,16 @@ class REPLContextManager:
             self.print(f"⚠️ Unknown command: /{command}")
 
     async def save_context(self, user_text: str):
-        prompt_path = 'vibecoder/prompts/save_context.md'
-        session_file = '.vibecoder/swe_session.md'
-        if not os.path.exists('.vibecoder'):
-            os.makedirs('.vibecoder')
-        with open(prompt_path, 'r') as file:
+        prompt_path = "vibecoder/prompts/save_context.md"
+        session_file = ".vibecoder/swe_session.md"
+        if not os.path.exists(".vibecoder"):
+            os.makedirs(".vibecoder")
+        with open(prompt_path, "r") as file:
             prompt = file.read()
         if user_text:
-           user_instruction = f'User instruction: {user_text}\n'
+            user_instruction = f"User instruction: {user_text}\n"
         else:
-           user_instruction = ''
+            user_instruction = ""
         summary_request = f"{prompt}\n{user_instruction}"
         outputs = []
         try:
@@ -217,7 +229,7 @@ class REPLContextManager:
         except Exception as e:
             self.print(f"⚠️ Error gathering async generator output: {str(e)}")
             return
-        with open(session_file, 'w') as file:
+        with open(session_file, "w") as file:
             file.write(summary)
         self.print("✅ Context successfully saved.")
 
@@ -238,7 +250,7 @@ class REPLContextManager:
             self.print(f"⚠️ Unknown agent role: {role}")
             return
         self.print(f"✅ Switched to {role} agent.")
-    
+
     async def ask(self, line: str):
         try:
             outputs = []
@@ -265,7 +277,9 @@ class REPLContextManager:
     async def open_editor_and_ask(self):
         template = self._prepare_editor_template()
         loop = asyncio.get_running_loop()
-        edited_text = await loop.run_in_executor(None, self._open_editor_blocking, template)
+        edited_text = await loop.run_in_executor(
+            None, self._open_editor_blocking, template
+        )
         if edited_text:
             self.print(f"💬 $ {edited_text}", style="usermsg")
             self.input_window.buffer.history.append_string(edited_text)
@@ -278,7 +292,8 @@ class REPLContextManager:
         if edited_text is None:
             return ""
         stripped = "\n".join(
-            line for line in edited_text.splitlines()
+            line
+            for line in edited_text.splitlines()
             if not line.lstrip().startswith("#")
         )
         return stripped.strip()
@@ -295,7 +310,11 @@ class REPLContextManager:
         self._interrupted = False
         end_time = asyncio.get_event_loop().time() + (minutes * 60)
         continue_msg = "Do what you think is best. Keep going until you've solved the problem. Think carefully, brainstorm, and consider your tools if you get stuck."
-        while self._working and not self._interrupted and asyncio.get_event_loop().time() < end_time:
+        while (
+            self._working
+            and not self._interrupted
+            and asyncio.get_event_loop().time() < end_time
+        ):
             self.print(f"💬 $ {continue_msg}", style="usermsg")
             await self.ask(continue_msg)
         self.status = WaitingStatus()
@@ -304,7 +323,9 @@ class REPLContextManager:
     def _prepare_editor_template(self) -> str:
         if not len(self.last_output):
             return ""
-        return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output) + "\n\n"
+        return (
+            "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output) + "\n\n"
+        )
 
     def handle_ctrl_c(self, event):
         self._interrupted = True
@@ -344,10 +365,12 @@ class REPLContextManager:
                 self._status_task.cancel()
 
     async def start_status_animation(self):
-        animation_frames = ['|', '/', '-', '\\']
+        animation_frames = ["|", "/", "-", "\\"]
         idx = 0
         while True:
-            self.status_bar.text = f"Status: {self.status.status_line()} - {animation_frames[idx]}"
+            self.status_bar.text = (
+                f"Status: {self.status.status_line()} - {animation_frames[idx]}"
+            )
             self.status_bar.buffer.cursor_position = 0
             idx = (idx + 1) % len(animation_frames)
             await asyncio.sleep(0.5)
@@ -356,6 +379,7 @@ class REPLContextManager:
 def main():
     repl = REPLContextManager()
     asyncio.run(repl.run())
+
 
 if __name__ == "__main__":
     main()

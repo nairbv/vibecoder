@@ -1,11 +1,13 @@
 import io
-import sys
 import os
 import subprocess
-from .base import Tool
+import sys
 from typing import Dict, List
 
+from .base import Tool
+
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
+
 
 class PytestTool(Tool):
     name = "pytest"
@@ -29,26 +31,26 @@ class PytestTool(Tool):
                         "paths": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "List of test files or directories to run."
+                            "description": "List of test files or directories to run.",
                         },
                         "verbose": {
                             "type": "boolean",
                             "description": "Run tests in verbose mode (show all tests).",
-                            "default": False
+                            "default": False,
                         },
                         "quiet": {
                             "type": "boolean",
                             "description": "Run tests quietly (only show minimal output).",
-                            "default": False
+                            "default": False,
                         },
                         "maxfail": {
                             "type": "integer",
                             "description": "Stop after this many failures. (Optional.)",
-                        }
+                        },
                     },
-                    "required": ["paths"]
-                }
-            }
+                    "required": ["paths"],
+                },
+            },
         }
 
     def run(self, args: Dict) -> str:
@@ -76,7 +78,7 @@ class PytestTool(Tool):
                 command,
                 capture_output=True,
                 text=True,
-                check=False  # don't raise an exception even if tests fail
+                check=False,  # don't raise an exception even if tests fail
             )
         except Exception as e:
             return f"[Error running pytest: {e}]"

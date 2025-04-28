@@ -1,9 +1,11 @@
-import subprocess
 import os
+import subprocess
 from typing import Dict, List
+
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
+
 
 class GitTool(Tool):
     name = "git_tool"
@@ -27,22 +29,22 @@ class GitTool(Tool):
                     "properties": {
                         "command": {
                             "type": "string",
-                            "description": f"The git command to execute. Available commands: {', '.join(self.supported_commands)}."
+                            "description": f"The git command to execute. Available commands: {', '.join(self.supported_commands)}.",
                         },
                         "options": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Options to pass to the git command (e.g., ['--since=2.weeks'])."
+                            "description": "Options to pass to the git command (e.g., ['--since=2.weeks']).",
                         },
                         "paths": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "File paths or patterns the command should consider."
-                        }
+                            "description": "File paths or patterns the command should consider.",
+                        },
                     },
-                    "required": ["command"]
-                }
-            }
+                    "required": ["command"],
+                },
+            },
         }
 
     def run(self, args: Dict) -> str:
@@ -55,9 +57,11 @@ class GitTool(Tool):
         git_command = ["git", command] + options + paths
 
         try:
-            result = subprocess.run(git_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.run(
+                git_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
             if result.returncode != 0:
                 return f"Error: {result.stderr.decode('utf-8')}"
-            return result.stdout.decode('utf-8')
+            return result.stdout.decode("utf-8")
         except Exception as e:
             return f"[Error executing git command '{' '.join(git_command)}': {e}]"

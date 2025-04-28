@@ -1,8 +1,10 @@
 import os
 from typing import Dict
+
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
+
 
 class ReadFileTool(Tool):
     name = "read_file"
@@ -25,22 +27,22 @@ class ReadFileTool(Tool):
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "The path to the file to read"
+                            "description": "The path to the file to read",
                         },
                         "start": {
                             "type": "integer",
                             "description": "Start reading the file from this line number (inclusive)",
-                            "minimum": 0
+                            "minimum": 0,
                         },
                         "end": {
                             "type": "integer",
                             "description": "Stop reading the file at this line number (exclusive)",
-                            "minimum": 0
-                        }
+                            "minimum": 0,
+                        },
                     },
-                    "required": ["path"]
-                }
-            }
+                    "required": ["path"],
+                },
+            },
         }
 
     def run(self, args: Dict) -> str:
@@ -53,7 +55,7 @@ class ReadFileTool(Tool):
                 # Adjust line number based on 1-indexed argument
                 start = start or 0
                 end = end or len(lines)
-                return ''.join(lines[start:end])
-                
+                return "".join(lines[start:end])
+
         except Exception as e:
             return f"[Error reading file '{path}': {e}]"

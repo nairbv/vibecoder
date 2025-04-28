@@ -1,17 +1,18 @@
-from openai import AsyncOpenAI
-from vibecoder.agents.agent import Agent
-
-import vibecoder.tools
+import os
+import pathlib
 
 from jinja2 import Template
-import pathlib
-import os
+from openai import AsyncOpenAI
+
+import vibecoder.tools
+from vibecoder.agents.agent import Agent
 
 PROMPTS_DIR = pathlib.Path(__file__).parent.parent / "prompts"
 
 
 # Initialize client
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
+
 
 def build_swe_agent() -> Agent:
     tools = vibecoder.tools.get_all_tools()
@@ -25,4 +26,8 @@ def build_swe_agent() -> Agent:
     system_prompt = swe_template.render(tools=tool_descriptions)
 
     # Pass the client to the Agent
-    return Agent(system_prompt=system_prompt.strip(), tools={tool.name: tool for tool in tools}, client=client)
+    return Agent(
+        system_prompt=system_prompt.strip(),
+        tools={tool.name: tool for tool in tools},
+        client=client,
+    )

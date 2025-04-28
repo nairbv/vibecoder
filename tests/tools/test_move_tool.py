@@ -1,18 +1,20 @@
 import os
-import pytest
 import tempfile
+
+import pytest
+
 from vibecoder.tools.move import MoveTool
 
 
 def test_move_tool_rename_file():
     tool = MoveTool()
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         # Setup: Create a dummy file
         with open("old_name.txt", "w") as f:
             f.write("Test content")
-        
+
         # Execute tool
         result = tool.run({"origin": "old_name.txt", "destination": "new_name.txt"})
 
@@ -24,7 +26,7 @@ def test_move_tool_rename_file():
 
 def test_move_tool_invalid_path():
     tool = MoveTool()
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         # Execute tool with invalid path
@@ -33,8 +35,7 @@ def test_move_tool_invalid_path():
         # Verify
         assert "Paths must be relative and confined to the working directory." in result
 
-    
-    
+
 def test_move_tool_file_not_found():
     tool = MoveTool()
 

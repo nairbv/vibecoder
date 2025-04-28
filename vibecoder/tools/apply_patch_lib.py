@@ -10,14 +10,7 @@ from __future__ import annotations
 import pathlib
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 
 # --------------------------------------------------------------------------- #

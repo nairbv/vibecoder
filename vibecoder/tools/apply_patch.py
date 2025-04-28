@@ -1,9 +1,11 @@
 import os
 from typing import Dict
-from vibecoder.tools.base import Tool
+
 from vibecoder.tools import apply_patch_lib
+from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
+
 
 class ApplyPatchTool(Tool):
     name = "apply_patch"
@@ -26,12 +28,12 @@ class ApplyPatchTool(Tool):
                     "properties": {
                         "input": {
                             "type": "string",
-                            "description": " The apply_patch command that you wish to execute."
+                            "description": " The apply_patch command that you wish to execute.",
                         }
                     },
-                    "required": ["input"]
-                }
-            }
+                    "required": ["input"],
+                },
+            },
         }
 
     def run(self, args: Dict) -> str:

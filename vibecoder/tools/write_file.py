@@ -1,8 +1,10 @@
 import os
 from typing import Dict
+
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
+
 
 class WriteFileTool(Tool):
     name = "write_file"
@@ -25,20 +27,20 @@ class WriteFileTool(Tool):
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "The path to the file to write"
+                            "description": "The path to the file to write",
                         },
                         "content": {
                             "type": "string",
-                            "description": "The new contents to write into the file"
+                            "description": "The new contents to write into the file",
                         },
                         "append": {
                             "type": "boolean",
-                            "description": "If true, append the content instead of overwriting."
-                        }
+                            "description": "If true, append the content instead of overwriting.",
+                        },
                     },
-                    "required": ["path", "content"]
-                }
-            }
+                    "required": ["path", "content"],
+                },
+            },
         }
 
     def run(self, args: Dict) -> str:

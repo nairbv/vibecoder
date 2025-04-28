@@ -1,7 +1,10 @@
 import asyncio
-from typing import AsyncIterator
 import random
-from vibecoder.agents.agent import AgentResponse, ToolUse  # Import the AgentResponse class
+from typing import AsyncIterator
+
+from vibecoder.agents.agent import (  # Import the AgentResponse class
+    AgentResponse, ToolUse)
+
 
 class MockAgent:
     def __init__(self, tools, model="default-model"):
@@ -32,7 +35,7 @@ class MockAgent:
             "Deserunt mollit anim id est laborum.",
             "Curabitur pretium tincidunt lacus.",
             "Nulla gravida orci a odio.",
-            "Nullam varius, turpis et commodo pharetra, est eros bibendum elit."
+            "Nullam varius, turpis et commodo pharetra, est eros bibendum elit.",
         ]
 
         yield AgentResponse(message=lorem_ipsum[0])  # Yield structured response

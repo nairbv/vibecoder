@@ -2,20 +2,24 @@ import json
 import os
 from abc import ABC
 from dataclasses import dataclass
+from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
 
 from dotenv import load_dotenv
-from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI, OpenAI
+
 from vibecoder.tools.base import Tool
 
 load_dotenv()
 
+
 class AgentOutput(ABC):
     """Base class for all agent messages."""
+
 
 @dataclass
 class AgentResponse(AgentOutput):
     message: str
+
 
 @dataclass
 class ToolUse(AgentOutput):
@@ -24,13 +28,19 @@ class ToolUse(AgentOutput):
 
 
 class Agent:
-    def __init__(self, system_prompt: str, tools: Dict[str, Tool], model: str = "gpt-4.1-mini", client=None):
+    def __init__(
+        self,
+        system_prompt: str,
+        tools: Dict[str, Tool],
+        model: str = "gpt-4.1-mini",
+        client=None,
+    ):
         self.model = model
         self.tools = tools
-        self.client = client or AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
-        self.messages = [
-            {"role": "system", "content": system_prompt}
-        ]
+        self.client = client or AsyncOpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"), max_retries=0
+        )
+        self.messages = [{"role": "system", "content": system_prompt}]
 
     def set_model(self, model: str):
         """Set a new model for the agent to use."""
@@ -50,7 +60,9 @@ class Agent:
 
             choice = response.choices[0]
             if hasattr(choice.message, "content") and choice.message.content:
-                self.messages.append({"role": "assistant", "content": choice.message.content})
+                self.messages.append(
+                    {"role": "assistant", "content": choice.message.content}
+                )
                 yield AgentResponse(choice.message.content)
 
             if hasattr(choice.message, "tool_calls") and choice.message.tool_calls:
@@ -61,7 +73,9 @@ class Agent:
                     # args_str = str(args)
                     # if len(args_str) > 200:
                     #     args_str = args_str[:200] + "..."
-                    yield ToolUse(name=tool_name, arguments=args) # f"{tool_name}({args_str})\n"
+                    yield ToolUse(
+                        name=tool_name, arguments=args
+                    )  # f"{tool_name}({args_str})\n"
 
                     if tool_name not in self.tools:
                         result = f"[Tool {tool_name} not implemented]"
@@ -72,16 +86,13 @@ class Agent:
 
                     # yield result
 
-                    self.messages.append({
-                        "role": "assistant",
-                        "tool_calls": [call.model_dump()]
-                    })
+                    self.messages.append(
+                        {"role": "assistant", "tool_calls": [call.model_dump()]}
+                    )
 
-                    self.messages.append({
-                        "role": "tool",
-                        "tool_call_id": call.id,
-                        "content": result
-                    })
+                    self.messages.append(
+                        {"role": "tool", "tool_call_id": call.id, "content": result}
+                    )
             else:
                 break
         return

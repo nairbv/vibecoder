@@ -1,11 +1,13 @@
 import time
 
+
 class AgentStatus:
     def status_line(self):
         raise NotImplementedError("Must be implemented in subclasses")
 
     def is_busy(self):
         return False
+
 
 class WorkingStatus(AgentStatus):
     def __init__(self, duration):
@@ -21,9 +23,11 @@ class WorkingStatus(AgentStatus):
     def is_busy(self):
         return True
 
+
 class WaitingStatus(AgentStatus):
     def status_line(self):
         return "👂 Waiting for input..."
+
 
 class RespondingStatus(AgentStatus):
     def status_line(self):

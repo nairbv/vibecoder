@@ -1,6 +1,8 @@
 import pytest
-from vibecoder.tools.apply_patch_lib import DiffError
+
 from vibecoder.tools.apply_patch import ApplyPatchTool
+from vibecoder.tools.apply_patch_lib import DiffError
+
 
 def test_apply_patch_success(monkeypatch):
     """Test successful patch application."""
@@ -13,13 +15,16 @@ def test_apply_patch_success(monkeypatch):
         called["patch_text"] = text
         return "Done!"
 
-    monkeypatch.setattr("vibecoder.tools.apply_patch_lib.process_patch", fake_process_patch)
+    monkeypatch.setattr(
+        "vibecoder.tools.apply_patch_lib.process_patch", fake_process_patch
+    )
 
     args = {"input": "*** Begin Patch\n...patch content...\n*** End Patch"}
     output = tool.run(args)
 
     assert "Done!" in output
     assert "*** Begin Patch" in called["patch_text"]
+
 
 def test_apply_patch_missing_input():
     """Test missing input argument."""
@@ -29,6 +34,7 @@ def test_apply_patch_missing_input():
     assert "Error" in output
     assert "input" in output
 
+
 def test_apply_patch_diff_error(monkeypatch):
     """Test handling of a controlled DiffError."""
 
@@ -37,12 +43,15 @@ def test_apply_patch_diff_error(monkeypatch):
     def fake_process_patch(text, open_fn, write_fn, remove_fn):
         raise DiffError("Patch failed.")
 
-    monkeypatch.setattr("vibecoder.tools.apply_patch_lib.process_patch", fake_process_patch)
+    monkeypatch.setattr(
+        "vibecoder.tools.apply_patch_lib.process_patch", fake_process_patch
+    )
 
     args = {"input": "*** Begin Patch\n...bad patch...\n*** End Patch"}
     output = tool.run(args)
 
     assert "Patch application failed" in output
+
 
 def test_apply_patch_generic_exception(monkeypatch):
     """Test handling of an unexpected exception."""
@@ -52,7 +61,9 @@ def test_apply_patch_generic_exception(monkeypatch):
     def fake_process_patch(text, open_fn, write_fn, remove_fn):
         raise Exception("Something unexpected")
 
-    monkeypatch.setattr("vibecoder.tools.apply_patch_lib.process_patch", fake_process_patch)
+    monkeypatch.setattr(
+        "vibecoder.tools.apply_patch_lib.process_patch", fake_process_patch
+    )
 
     args = {"input": "*** Begin Patch\n...patch content...\n*** End Patch"}
     output = tool.run(args)

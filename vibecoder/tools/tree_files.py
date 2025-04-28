@@ -2,9 +2,11 @@ import os
 import shlex
 import subprocess
 from typing import Dict, List
+
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
+
 
 class TreeFilesTool(Tool):
     name = "tree_files"
@@ -27,37 +29,37 @@ class TreeFilesTool(Tool):
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "Root directory to list (default is '.'). Only subdirectories allowed."
+                            "description": "Root directory to list (default is '.'). Only subdirectories allowed.",
                         },
                         "max_depth": {
                             "type": "integer",
-                            "description": "Limit depth of recursion."
+                            "description": "Limit depth of recursion.",
                         },
                         "ignore_gitignore": {
                             "type": "boolean",
-                            "description": "Respect .gitignore files when listing."
+                            "description": "Respect .gitignore files when listing.",
                         },
                         "ignore_patterns": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Exclude files matching these patterns."
+                            "description": "Exclude files matching these patterns.",
                         },
                         "include_pattern": {
                             "type": "string",
-                            "description": "Include only files matching this pattern."
+                            "description": "Include only files matching this pattern.",
                         },
                         "show_modified_times": {
                             "type": "boolean",
-                            "description": "Show last modified dates for each file."
+                            "description": "Show last modified dates for each file.",
                         },
                         "show_directory_sizes": {
                             "type": "boolean",
-                            "description": "Compute size of directories based on contents."
-                        }
+                            "description": "Compute size of directories based on contents.",
+                        },
                     },
-                    "required": []
-                }
-            }
+                    "required": [],
+                },
+            },
         }
 
     def _sanitize_path(self, path: str) -> str:
@@ -97,12 +99,7 @@ class TreeFilesTool(Tool):
             cmd.append("--du")
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return result.stdout
         except subprocess.CalledProcessError as e:
             return f"[tree command failed: {e.stderr.strip()}]"
