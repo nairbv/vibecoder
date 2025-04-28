@@ -246,7 +246,10 @@ class REPLContextManager:
                     self.print(text, style="output")
                     outputs.append(text)
                 elif isinstance(output, ToolUse):
-                    tool_call_str = f"{output.name}({', '.join(output.arguments)})"
+                    args_str = str(args)
+                    if len(args_str) > 200:
+                        args_str = args_str[:200] + "..."
+                    tool_call_str = f"{output.name}({args_str})"
                     text = f"🔧 Tool call: {tool_call_str}"
                     self.print(text, style="toolcall")
                     outputs.append(text)
