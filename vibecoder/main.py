@@ -105,12 +105,12 @@ class REPLContextManager:
             self.kb.add("pageup")(self.handle_pageup)
             self.kb.add("pagedown")(self.handle_pagedown)
             self.style = Style.from_dict({
-                "output": "bg:#000000 #ffffff", # text responses from agent.
-                "input": "bg:#222222 #00ff00", # unused?
-                "status": "bg:#444444 #ffffff bold", # unused?
-                "toolcall": "ansicyan", # tool calls from the agent
-                "usermsg": "ansigreen", # message from the user.
-                "assist": "bold #ffffff", # application messages (commands, exceptions)
+                "output": "bg:#000000 #ffffff", # text responses from agent (white on black)
+                "input": "bg:#222222 #00ff00", # input text box (dark grey, green text)
+                "status": "bg:#444444 #ffffff bold", # status bar at top of window (grey background, white text)
+                "toolcall": "ansicyan", # tool calls from the agent (cyan)
+                "usermsg": "ansigreen", # message from the user (green)
+                "assist": "bold #ffffff", # application messages like commands and exceptions (bold white)
             })
             self.app = Application(
                 layout=self.layout,
