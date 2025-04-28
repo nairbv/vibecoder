@@ -309,8 +309,8 @@ class REPLContextManager:
         if pos is None:
             pos = len(self._output_lines) - 1
         pos -= 20
-        if pos < 0:
-            pos = 0
+        if pos < 1:
+            pos = 1
         self._scroll_pos = pos
         self.app.invalidate()
 
