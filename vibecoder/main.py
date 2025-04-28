@@ -127,7 +127,9 @@ class REPLContextManager:
         return Point(0, y)
 
     def print(self, text: str, style: str = "assist"):
-        self._output_lines.append((style, text.rstrip() + "\n"))
+        split = text.rstrip().splitlines()
+        for line in split:
+            self._output_lines.append((style, line + "\n"))
         get_app().invalidate()
 
     def on_enter(self, buffer):
