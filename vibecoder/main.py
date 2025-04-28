@@ -105,12 +105,12 @@ class REPLContextManager:
             self.kb.add("pageup")(self.handle_pageup)
             self.kb.add("pagedown")(self.handle_pagedown)
             self.style = Style.from_dict({
-                "output": "bg:#000000 #ffffff",
-                "input": "bg:#222222 #00ff00",
-                "status": "bg:#444444 #ffffff bold",
-                "toolcall": "ansicyan",
-                "usermsg": "ansigreen",
-                "assist": "bold #ffffff",
+                "output": "bg:#000000 #ffffff", # text responses from agent.
+                "input": "bg:#222222 #00ff00", # unused?
+                "status": "bg:#444444 #ffffff bold", # unused?
+                "toolcall": "ansicyan", # tool calls from the agent
+                "usermsg": "ansigreen", # message from the user.
+                "assist": "bold #ffffff", # application messages (commands, exceptions)
             })
             self.app = Application(
                 layout=self.layout,
@@ -244,13 +244,15 @@ class REPLContextManager:
             outputs = []
             async for output in self.agent.ask(line):
                 if isinstance(output, AgentResponse):
-                    self.print(f"🤖 SWE: {output.message}", style="toolcall")
-                    outputs.append(output)  # Store AgentResponse outputs
+                    text = f"🤖 SWE: {output.message}"
+                    self.print(text, style="output")
+                    outputs.append(text)
                 elif isinstance(output, ToolUse):
                     tool_call_str = f"{output.name}({', '.join(output.arguments)})"
-                    self.print(f"🔧 Tool call: {tool_call_str}", style="toolcall")
-                    outputs.append(output)  # Store ToolUse outputs
-            self.last_output = outputs  # Now correctly contains both types of outputs
+                    text = f"🔧 Tool call: {tool_call_str}"
+                    self.print(text, style="toolcall")
+                    outputs.append(text)
+            self.last_output = outputs
         except Exception as e:
             tb = traceback.format_exc()
             self.print(f"⚠️ Exception during ask:\n{tb}")
@@ -295,9 +297,9 @@ class REPLContextManager:
         self.print("✅ Finished autonomous work mode.")
 
     def _prepare_editor_template(self) -> str:
-        if not self.last_output:
+        if not len(self.last_output):
             return ""
-        return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output.splitlines()) + "\n\n"
+        return "\n\n\n\n\n" + "\n".join(f"# {line}" for line in self.last_output) + "\n\n"
 
     def handle_ctrl_c(self, event):
         self._interrupted = True
