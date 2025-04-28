@@ -1,7 +1,7 @@
 import asyncio
 from typing import AsyncIterator
 import random
-from vibecoder.agents.agent import AgentResponse  # Import the AgentResponse class
+from vibecoder.agents.agent import AgentResponse, ToolUse  # Import the AgentResponse class
 
 class MockAgent:
     def __init__(self, tools, model="default-model"):
@@ -32,7 +32,9 @@ class MockAgent:
 
         yield AgentResponse(message=lorem_ipsum[0])  # Yield structured response
 
-        for _ in range(9):
+        for _ in range(7):
             await asyncio.sleep(0.01)  # Fake slight delay for pacing
-            yield AgentResponse(message=random.choice(lorem_ipsum))  # Yield structured responses
+            yield AgentResponse(message=random.choice(lorem_ipsum))
+        yield ToolUse(name="mock", arguments=["a", "b", "c"])
+        yield AgentResponse(message=random.choice(lorem_ipsum))
         return
