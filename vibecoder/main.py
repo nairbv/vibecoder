@@ -105,12 +105,12 @@ class REPLContextManager:
             self.kb.add("pageup")(self.handle_pageup)
             self.kb.add("pagedown")(self.handle_pagedown)
             self.style = Style.from_dict({
-                "output": "bg:#000000 #ffffff", # text responses from agent (white on black)
+                "output": "bg:#000000 #ffffff", # default for output text box. text responses from agent (white on black)
                 "input": "bg:#222222 #00ff00", # input text box (dark grey, green text)
                 "status": "bg:#444444 #ffffff bold", # status bar at top of window (grey background, white text)
                 "toolcall": "ansicyan", # tool calls from the agent (cyan)
                 "usermsg": "ansigreen", # message from the user (green)
-                "assist": "bold #ffffff", # application messages like commands and exceptions (bold white)
+                "application": "bold #ffffff", # application messages like commands and exceptions (bold white)
             })
             self.app = Application(
                 layout=self.layout,
@@ -126,7 +126,7 @@ class REPLContextManager:
         y = self._scroll_pos or len(self._output_lines) - 1
         return Point(0, y)
 
-    def print(self, text: str, style: str = "assist"):
+    def print(self, text: str, style: str = "application"):
         split = text.rstrip().splitlines()
         for line in split:
             self._output_lines.append((style, line + "\n"))
