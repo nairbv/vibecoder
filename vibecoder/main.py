@@ -128,8 +128,6 @@ class REPLContextManager:
 
     def print(self, text: str, style: str = "assist"):
         self._output_lines.append((style, text.rstrip() + "\n"))
-        if len(self._output_lines) > 10000:
-            self._output_lines = self._output_lines[-1000:]
         get_app().invalidate()
 
     def on_enter(self, buffer):
