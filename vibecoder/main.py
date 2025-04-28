@@ -22,8 +22,7 @@ from prompt_toolkit.layout.scrollable_pane import ScrollOffsets
 from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import TextArea
 
-from vibecoder.agent_status import (RespondingStatus, WaitingStatus,
-                                    WorkingStatus)
+from vibecoder.agent_status import RespondingStatus, WaitingStatus, WorkingStatus
 from vibecoder.agents.agent import AgentResponse, ToolUse
 from vibecoder.agents.mock_agent import MockAgent
 from vibecoder.agents.swe import build_swe_agent

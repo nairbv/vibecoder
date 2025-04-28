@@ -3,7 +3,9 @@ import random
 from typing import AsyncIterator
 
 from vibecoder.agents.agent import (  # Import the AgentResponse class
-    AgentResponse, ToolUse)
+    AgentResponse,
+    ToolUse,
+)
 
 
 class MockAgent:
