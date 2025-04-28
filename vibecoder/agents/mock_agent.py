@@ -21,7 +21,12 @@ class MockAgent:
             "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
             "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi.",
-            "Duis aute irure dolor in reprehenderit in voluptate velit esse.",
+            """Duis -- a multi line message helps us make sure scroll works correctly per line
+            aute irure
+            dolor in reprehenderit
+            in voluptate 
+            velit
+            esse.""",
             "Cillum dolore eu fugiat nulla pariatur.",
             "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.",
             "Deserunt mollit anim id est laborum.",
