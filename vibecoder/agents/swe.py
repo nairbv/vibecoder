@@ -1,13 +1,7 @@
 from openai import AsyncOpenAI
 from vibecoder.agents.agent import Agent
-from vibecoder.tools.read_file import ReadFileTool
-from vibecoder.tools.tree_files import TreeFilesTool
-from vibecoder.tools.write_file import WriteFileTool
-from vibecoder.tools.apply_patch import ApplyPatchTool
-from vibecoder.tools.pytest_tool import PytestTool
-from vibecoder.tools.git_tool import GitTool
-from vibecoder.tools.grep import GrepTool
-from vibecoder.tools.move import MoveTool
+
+import vibecoder.tools
 
 from jinja2 import Template
 import pathlib
@@ -20,16 +14,7 @@ PROMPTS_DIR = pathlib.Path(__file__).parent.parent / "prompts"
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
 
 def build_swe_agent() -> Agent:
-    tools = [
-        ReadFileTool(),
-        WriteFileTool(),
-        TreeFilesTool(),
-        ApplyPatchTool(),
-        PytestTool(),
-        GrepTool(),
-        GitTool(),
-        MoveTool()  # Add the new tool here
-    ]
+    tools = vibecoder.tools.get_all_tools()
 
     tool_descriptions = "\n".join(t.display_signature for t in tools)
 
