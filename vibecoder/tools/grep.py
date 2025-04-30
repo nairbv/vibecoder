@@ -46,7 +46,12 @@ class GrepTool(Tool):
         }
 
     def run(self, args: Dict) -> str:
+        if "pattern" not in args:
+            return "[Error in call to grep] `pattern` is required"
         pattern = args["pattern"]
+        if "paths" not in args:
+            return "[Error in call to grep] `paths` is required"
+
         paths = args["paths"]
         ignore_patterns = args.get("ignore_patterns", [])
         include_pattern = args.get("include_pattern")
