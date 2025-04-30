@@ -1,3 +1,41 @@
+import time
+
+
+def test_pytest_tool_timeout():
+    """Test that the pytest tool times out and kills tests that hang."""
+    tool = PytestTool()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_file_path = os.path.join(tmpdir, "test_hang.py")
+        with open(test_file_path, "w") as f:
+            f.write(
+                """
+import time
+def test_hang():
+    time.sleep(30)  # Sleep a long time to simulate hang
+"""
+            )
+
+        args = {
+            "paths": [test_file_path],
+            "verbose": True,
+            "timeout": 1,  # 1 second timeout
+        }
+
+        previous_dir = tempfile.gettempdir()
+
+        # Change cwd to temp dir for isolated run
+        try:
+            os.chdir(tmpdir)
+            output = tool.run(args)
+        finally:
+            os.chdir(previous_dir)
+
+        assert (
+            "timeout" in output.lower() or "killed" in output.lower()
+        ), f"Unexpected output: {output}"
+
+
 import os
 import tempfile
 import warnings

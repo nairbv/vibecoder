@@ -19,6 +19,9 @@ The Pytest tool runs tests within the project and captures both the detailed out
 - `maxfail` (integer, optional):  
   If provided, stop running after the specified number of test failures.
 
+- `timeout` (integer, optional):
+  Timtout in seconds. Defaults to 60. Cannot be set higher than 600.
+
 ---
 
 **Outputs**:

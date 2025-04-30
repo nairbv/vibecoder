@@ -47,6 +47,11 @@ class PytestTool(Tool):
                             "type": "integer",
                             "description": "Stop after this many failures. (Optional.)",
                         },
+                        "timeout": {
+                            "type": "integer",
+                            "description": "Timeout in seconds for the pytest run. Default 60, maximum 600.",
+                            "default": 60,
+                        },
                     },
                     "required": ["paths"],
                 },
@@ -58,6 +63,20 @@ class PytestTool(Tool):
         verbose: bool = args.get("verbose", False)
         quiet: bool = args.get("quiet", False)
         maxfail: int = args.get("maxfail", None)
+        timeout_raw = args.get("timeout")
+
+        default_timeout = 60
+        max_timeout = 600
+
+        if isinstance(timeout_raw, int):
+            if timeout_raw <= 0:
+                timeout = default_timeout
+            elif timeout_raw > max_timeout:
+                timeout = max_timeout
+            else:
+                timeout = timeout_raw
+        else:
+            timeout = default_timeout
 
         pytest_args = []
 
@@ -70,7 +89,6 @@ class PytestTool(Tool):
 
         pytest_args += paths
 
-        # Assemble the full command
         command = ["pytest"] + pytest_args
 
         try:
@@ -78,8 +96,11 @@ class PytestTool(Tool):
                 command,
                 capture_output=True,
                 text=True,
-                check=False,  # don't raise an exception even if tests fail
+                check=False,
+                timeout=timeout,
             )
+        except subprocess.TimeoutExpired as e:
+            return f"[Error: pytest run exceeded timeout of {timeout} seconds and was killed.]"
         except Exception as e:
             return f"[Error running pytest: {e}]"
 
