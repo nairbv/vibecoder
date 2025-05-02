@@ -41,7 +41,7 @@ async def test_compare_mock_with_agent():
         )
     )
 
-    real_agent = Agent(system_prompt="test", tools=tools, client=mock_client)
+    real_agent = Agent(mock_client, system_prompt="test", tools=tools)
 
     real_response = [resp async for resp in real_agent.ask("example input")]
 

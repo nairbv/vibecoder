@@ -9,7 +9,7 @@ from openai import AsyncOpenAI, OpenAI
 
 from vibecoder.tools.base import Tool
 
-load_dotenv()
+# load_dotenv()
 
 
 class AgentOutput(ABC):
@@ -30,16 +30,14 @@ class ToolUse(AgentOutput):
 class Agent:
     def __init__(
         self,
-        system_prompt: str,
-        tools: Dict[str, Tool],
+        client,
+        system_prompt: str = "",
+        tools: Dict[str, Tool] = {},
         model: str = "gpt-4.1-mini",
-        client=None,
     ):
         self.model = model
         self.tools = tools
-        self.client = client or AsyncOpenAI(
-            api_key=os.getenv("OPENAI_API_KEY"), max_retries=0
-        )
+        self.client = client
         self.messages = [{"role": "system", "content": system_prompt}]
 
     def set_model(self, model: str):

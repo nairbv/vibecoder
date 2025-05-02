@@ -33,9 +33,9 @@ async def mock_tool():
 async def test_agent_initialization(mock_openai_client, mock_tool):
     # Use mock_openai_client and mock_tool directly without awaiting them
     agent = Agent(
+        mock_openai_client,
         system_prompt="Test prompt",
         tools={"tool_name": mock_tool},
-        client=mock_openai_client,
     )
     assert agent.model == "gpt-4.1-mini"
     assert agent.tools == {"tool_name": mock_tool}
@@ -46,9 +46,9 @@ async def test_agent_initialization(mock_openai_client, mock_tool):
 async def test_agent_ask_with_response(mock_openai_client, mock_tool):
     # Use mock_openai_client and mock_tool directly without awaiting them
     agent = Agent(
+        mock_openai_client,
         system_prompt="Test prompt",
         tools={"tool_name": mock_tool},
-        client=mock_openai_client,
     )
     generator = agent.ask("user question")
     response_content = await generator.__anext__()

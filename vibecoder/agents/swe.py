@@ -1,6 +1,7 @@
 import os
 import pathlib
 
+from dotenv import load_dotenv
 from jinja2 import Template
 from openai import AsyncOpenAI
 
@@ -9,6 +10,7 @@ from vibecoder.agents.agent import Agent
 
 PROMPTS_DIR = pathlib.Path(__file__).parent.parent / "prompts"
 
+load_dotenv()
 
 # Initialize client
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
@@ -27,7 +29,7 @@ def build_swe_agent() -> Agent:
 
     # Pass the client to the Agent
     return Agent(
+        client,
         system_prompt=system_prompt.strip(),
         tools={tool.name: tool for tool in tools},
-        client=client,
     )
