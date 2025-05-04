@@ -93,14 +93,13 @@ class AnthropicAgent:
         client,
         system_prompt: str = "",
         tools: Dict[str, Tool] = {},
-        model: str = "claude-3-sonnet-20240229",
+        model: str = "claude-3-5-haiku-latest",
     ):
         self.model = model
         self.tools = tools
         self.client = client
-        self.messages = (
-            [{"role": "user", "content": system_prompt}] if system_prompt else []
-        )
+        self.messages = []
+        self.system_prompt = system_prompt
 
     def set_model(self, model: str):
         """Set a new model for the agent to use."""
@@ -111,14 +110,18 @@ class AnthropicAgent:
         converted_tools = []
         for tool in self.tools.values():
             sig = tool.signature["function"]
-            converted_tools.append(
-                {
-                    "name": sig["name"],
-                    "description": sig.get("description", ""),
-                    "input_schema": sig.get("parameters", {}),
-                    "type": "function",
-                }
-            )
+            params = (sig.get("parameters", {}),)
+            anth_tool = {
+                "name": sig["name"],
+                "description": sig.get("description", ""),
+                "input_schema": {"type": "object", "properties": {}, "required": []},
+            }
+            if "properties" in params:
+                anth_tool["input_schema"]["properties"] = sig["properties"]
+            if "required" in params:
+                anth_tool["input_schema"]["required"] = sig["required"]
+
+            converted_tools.append(anth_tool)
         return converted_tools
 
     async def ask(self, user_input: str) -> AsyncIterator[AgentOutput]:
@@ -130,8 +133,11 @@ class AnthropicAgent:
                 messages=self.messages,
                 tools=self._convert_tools(),
                 stream=False,
+                max_tokens=4096,
+                system=self.system_prompt,
             )
 
+            has_tool_use = False
             for content_block in response.content:
                 if content_block.type == "text":
                     self.messages.append(
@@ -140,8 +146,10 @@ class AnthropicAgent:
                     yield AgentResponse(content_block.text)
 
                 elif content_block.type == "tool_use":
-                    tool_name = content_block.name
-                    args = content_block.input
+                    has_tool_use = True
+                    tool_use = content_block
+                    tool_name = tool_use.name
+                    args = tool_use.input
 
                     yield ToolUse(name=tool_name, arguments=args)
 
@@ -154,16 +162,33 @@ class AnthropicAgent:
 
                     self.messages.append(
                         {
+                            "role": "assistant",
+                            "content": [
+                                {
+                                    "type": "tool_use",
+                                    # "tool_use": {
+                                    "id": tool_use.id,
+                                    "name": tool_name,
+                                    "input": args,
+                                    # },
+                                }
+                            ],
+                        }
+                    )
+                    self.messages.append(
+                        {
                             "role": "user",
                             "content": [
                                 {
                                     "type": "tool_result",
-                                    "tool_use_id": content_block.id,
+                                    "tool_use_id": tool_use.id,
                                     "content": result,
                                 }
                             ],
                         }
                     )
-                    break  # After tool use, send result and get next response
+            if has_tool_use:
+                continue
             else:
                 break
+        return
