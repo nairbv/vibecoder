@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from vibecoder.agents.agent import Agent, AgentResponse  # Add Agent import
+from vibecoder.agents.agent import AgentResponse, OpenAIAgent  # Add Agent import
 from vibecoder.agents.mock_agent import MockAgent
 
 
@@ -41,7 +41,7 @@ async def test_compare_mock_with_agent():
         )
     )
 
-    real_agent = Agent(mock_client, system_prompt="test", tools=tools)
+    real_agent = OpenAIAgent(mock_client, system_prompt="test", tools=tools)
 
     real_response = [resp async for resp in real_agent.ask("example input")]
 

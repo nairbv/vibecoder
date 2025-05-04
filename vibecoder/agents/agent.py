@@ -1,15 +1,9 @@
 import json
-import os
 from abc import ABC
 from dataclasses import dataclass
 from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
 
-from dotenv import load_dotenv
-from openai import AsyncOpenAI, OpenAI
-
 from vibecoder.tools.base import Tool
-
-# load_dotenv()
 
 
 class AgentOutput(ABC):
@@ -27,7 +21,7 @@ class ToolUse(AgentOutput):
     arguments: list[str]
 
 
-class Agent:
+class OpenAIAgent:
     def __init__(
         self,
         client,
@@ -68,9 +62,6 @@ class Agent:
                     tool_name = call.function.name
                     args = json.loads(call.function.arguments)
 
-                    # args_str = str(args)
-                    # if len(args_str) > 200:
-                    #     args_str = args_str[:200] + "..."
                     yield ToolUse(
                         name=tool_name, arguments=args
                     )  # f"{tool_name}({args_str})\n"
@@ -94,3 +85,85 @@ class Agent:
             else:
                 break
         return
+
+
+class AnthropicAgent:
+    def __init__(
+        self,
+        client,
+        system_prompt: str = "",
+        tools: Dict[str, Tool] = {},
+        model: str = "claude-3-sonnet-20240229",
+    ):
+        self.model = model
+        self.tools = tools
+        self.client = client
+        self.messages = (
+            [{"role": "user", "content": system_prompt}] if system_prompt else []
+        )
+
+    def set_model(self, model: str):
+        """Set a new model for the agent to use."""
+        self.model = model
+
+    def _convert_tools(self):
+        """Convert tools to Anthropic's expected format."""
+        converted_tools = []
+        for tool in self.tools.values():
+            sig = tool.signature["function"]
+            converted_tools.append(
+                {
+                    "name": sig["name"],
+                    "description": sig.get("description", ""),
+                    "input_schema": sig.get("parameters", {}),
+                    "type": "function",
+                }
+            )
+        return converted_tools
+
+    async def ask(self, user_input: str) -> AsyncIterator[AgentOutput]:
+        self.messages.append({"role": "user", "content": user_input})
+
+        while True:
+            response = await self.client.messages.create(
+                model=self.model,
+                messages=self.messages,
+                tools=self._convert_tools(),
+                stream=False,
+            )
+
+            for content_block in response.content:
+                if content_block.type == "text":
+                    self.messages.append(
+                        {"role": "assistant", "content": content_block.text}
+                    )
+                    yield AgentResponse(content_block.text)
+
+                elif content_block.type == "tool_use":
+                    tool_name = content_block.name
+                    args = content_block.input
+
+                    yield ToolUse(name=tool_name, arguments=args)
+
+                    if tool_name not in self.tools:
+                        result = f"[Tool {tool_name} not implemented]"
+                    else:
+                        result = self.tools[tool_name].run(args)
+                        if len(result):
+                            result += "\n"
+
+                    self.messages.append(
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "tool_result",
+                                    "tool_use_id": content_block.id,
+                                    "content": result,
+                                }
+                            ],
+                        }
+                    )
+                    break  # After tool use, send result and get next response
+            else:
+                break

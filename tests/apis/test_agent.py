@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 import pytest_asyncio
 
-from vibecoder.agents.agent import Agent, AgentResponse
+from vibecoder.agents.agent import AgentResponse, OpenAIAgent
 from vibecoder.tools.base import Tool
 
 
@@ -32,7 +32,7 @@ async def mock_tool():
 @pytest.mark.asyncio
 async def test_agent_initialization(mock_openai_client, mock_tool):
     # Use mock_openai_client and mock_tool directly without awaiting them
-    agent = Agent(
+    agent = OpenAIAgent(
         mock_openai_client,
         system_prompt="Test prompt",
         tools={"tool_name": mock_tool},
@@ -45,7 +45,7 @@ async def test_agent_initialization(mock_openai_client, mock_tool):
 @pytest.mark.asyncio
 async def test_agent_ask_with_response(mock_openai_client, mock_tool):
     # Use mock_openai_client and mock_tool directly without awaiting them
-    agent = Agent(
+    agent = OpenAIAgent(
         mock_openai_client,
         system_prompt="Test prompt",
         tools={"tool_name": mock_tool},
