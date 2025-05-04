@@ -25,7 +25,7 @@ from prompt_toolkit.widgets import TextArea
 from vibecoder.agent_status import RespondingStatus, WaitingStatus, WorkingStatus
 from vibecoder.agents.agent import AgentResponse, ToolUse
 from vibecoder.agents.mock_agent import MockAgent
-from vibecoder.agents.swe import build_swe_agent
+from vibecoder.agents.swe import build_anthropic_swe_agent, build_swe_agent
 
 HISTORY_FILE = os.path.expanduser("~/.vibecoder_history")
 
@@ -45,6 +45,7 @@ class REPLContextManager:
         self.agents_dict = {
             "swe": self.agent,
             "mock": None,  # Initialized to None; will instantiate upon first switch
+            "anthropic": None,
         }
         self.last_output = []
         self._working = False
@@ -243,6 +244,8 @@ class REPLContextManager:
                     self.agents_dict[role] = build_swe_agent()
                 elif role == "mock":
                     self.agents_dict[role] = MockAgent(tools=None)
+                elif role == "anthropic":
+                    self.agents_dict[role] = build_anthropic_swe_agent()
             self.agent = self.agents_dict[role]
             self.agent_type = role
         else:
