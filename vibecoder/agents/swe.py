@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from jinja2 import Template
 
 import vibecoder.tools
@@ -9,9 +9,8 @@ from vibecoder.agents.agent import AnthropicAgent, OpenAIAgent
 
 PROMPTS_DIR = pathlib.Path(__file__).parent.parent / "prompts"
 
-load_dotenv()
-
-# Initialize client
+dot_env = find_dotenv(usecwd=True)
+load_dotenv(dotenv_path=dot_env)
 
 
 def build_swe_agent() -> OpenAIAgent:
@@ -37,7 +36,30 @@ def build_swe_agent() -> OpenAIAgent:
     )
 
 
-def build_anthropic_swe_agent() -> OpenAIAgent:
+def code_reviewer_analyst() -> OpenAIAgent:
+    from openai import AsyncOpenAI
+
+    openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), max_retries=0)
+
+    tools = vibecoder.tools.get_analyst_tools()
+
+    tool_descriptions = "\n".join(t.display_signature for t in tools)
+
+    swe_prompt_path = PROMPTS_DIR / "analyst.md"
+    with open(swe_prompt_path, "r") as f:
+        swe_template = Template(f.read())
+
+    system_prompt = swe_template.render(tools=tool_descriptions)
+
+    # Pass the client to the Agent
+    return OpenAIAgent(
+        openai_client,
+        system_prompt=system_prompt.strip(),
+        tools={tool.name: tool for tool in tools},
+    )
+
+
+def build_anthropic_swe_agent() -> AnthropicAgent:
     tools = vibecoder.tools.get_all_tools()
 
     tool_descriptions = "\n".join(t.display_signature for t in tools)

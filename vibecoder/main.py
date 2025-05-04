@@ -22,6 +22,7 @@ from prompt_toolkit.layout.scrollable_pane import ScrollOffsets
 from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import TextArea
 
+from vibecoder import agents
 from vibecoder.agent_status import RespondingStatus, WaitingStatus, WorkingStatus
 from vibecoder.agents.agent import AgentResponse, ToolUse
 from vibecoder.agents.mock_agent import MockAgent
@@ -46,6 +47,7 @@ class REPLContextManager:
             "swe": self.agent,
             "mock": None,  # Initialized to None; will instantiate upon first switch
             "anthropic": None,
+            "analyst": None,
         }
         self.last_output = []
         self._working = False
@@ -240,12 +242,7 @@ class REPLContextManager:
             return
         if role in self.agents_dict:
             if not self.agents_dict[role]:
-                if role == "swe":
-                    self.agents_dict[role] = build_swe_agent()
-                elif role == "mock":
-                    self.agents_dict[role] = MockAgent(tools=None)
-                elif role == "anthropic":
-                    self.agents_dict[role] = build_anthropic_swe_agent()
+                self.agents_dict[role] = agents.create_agent_by_role(role)
             self.agent = self.agents_dict[role]
             self.agent_type = role
         else:

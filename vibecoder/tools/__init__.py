@@ -22,3 +22,16 @@ def get_all_tools() -> List[Tool]:
             if isinstance(obj, type) and issubclass(obj, Tool) and obj is not Tool:
                 tool_instances.append(obj())
     return tool_instances
+
+
+def get_analyst_tools() -> List[Tool]:
+    analyst_tool_names = {
+        "grep",
+        "git_tool",
+        "read_file",
+        "write_file",
+        "tree_files",
+        "pytest",
+    }
+    all_tools = get_all_tools()
+    return [tool for tool in all_tools if tool.name in analyst_tool_names]
