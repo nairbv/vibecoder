@@ -52,5 +52,5 @@ async def test_agent_ask_with_response(mock_openai_client, mock_tool):
     )
     generator = agent.ask("user question")
     response_content = await generator.__anext__()
-    assert response_content == AgentResponse(message="response content")
+    assert response_content.content == "response content"
     mock_openai_client.chat.completions.create.assert_called_once()

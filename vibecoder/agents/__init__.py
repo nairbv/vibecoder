@@ -1,3 +1,13 @@
+from vibecoder.agents.agent import (
+    AgentMessage,
+    AgentResponse,
+    AnthropicAgent,
+    BaseAgent,
+    OpenAIAgent,
+    ToolResult,
+    ToolUse,
+    UserMessage,
+)
 from vibecoder.agents.mock_agent import MockAgent
 from vibecoder.agents.swe import (
     build_anthropic_swe_agent,

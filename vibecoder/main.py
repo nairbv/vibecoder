@@ -24,7 +24,8 @@ from prompt_toolkit.widgets import TextArea
 
 from vibecoder import agents
 from vibecoder.agent_status import RespondingStatus, WaitingStatus, WorkingStatus
-from vibecoder.agents.agent import AgentResponse, ToolUse
+from vibecoder.agents import AgentResponse, ToolUse
+from vibecoder.agents.agent import ToolResult
 from vibecoder.agents.mock_agent import MockAgent
 from vibecoder.agents.swe import build_anthropic_swe_agent, build_swe_agent
 
@@ -255,17 +256,25 @@ class REPLContextManager:
             outputs = []
             async for output in self.agent.ask(line):
                 if isinstance(output, AgentResponse):
-                    text = f"🤖 SWE: {output.message}"
+                    text = f"🤖 SWE: {output.content}"
                     self.print(text, style="output")
                     outputs.append(text)
                 elif isinstance(output, ToolUse):
                     args_str = str(output.arguments)
                     if len(args_str) > 200:
                         args_str = args_str[:200] + "..."
-                    tool_call_str = f"{output.name}({args_str})"
+                    tool_call_str = f"{output.tool_name}({args_str})"
                     text = f"🔧 Tool call: {tool_call_str}"
                     self.print(text, style="toolcall")
                     outputs.append(text)
+                elif isinstance(output, ToolResult):
+                    cleaned = output.content.strip().replace("\n", "\\n")
+                    text = cleaned[:100]
+                    if len(cleaned) >= 100:
+                        text += "..."
+                    self.print(
+                        f"ToolResult({output.tool_name}): {text}", style="toolcall"
+                    )
                 else:
                     self.print(f"unexpected response from agent: '{str(output)}'")
             self.last_output = outputs

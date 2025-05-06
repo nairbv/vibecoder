@@ -4,11 +4,12 @@ from typing import AsyncIterator
 
 from vibecoder.agents.agent import (  # Import the AgentResponse class
     AgentResponse,
+    BaseAgent,
     ToolUse,
 )
 
 
-class MockAgent:
+class MockAgent(BaseAgent):
     def __init__(self, tools, model="default-model"):
         self.tools = tools
         self.model = model
@@ -40,11 +41,11 @@ class MockAgent:
             "Nullam varius, turpis et commodo pharetra, est eros bibendum elit.",
         ]
 
-        yield AgentResponse(message=lorem_ipsum[0])  # Yield structured response
+        yield AgentResponse(content=lorem_ipsum[0])  # Yield structured response
 
         for _ in range(7):
             await asyncio.sleep(0.01)  # Fake slight delay for pacing
-            yield AgentResponse(message=random.choice(lorem_ipsum))
-        yield ToolUse(name="mock", arguments=["a", "b", "c"])
-        yield AgentResponse(message=random.choice(lorem_ipsum))
+            yield AgentResponse(content=random.choice(lorem_ipsum))
+        yield ToolUse(tool_name="mock", arguments=["a", "b", "c"])
+        yield AgentResponse(content=random.choice(lorem_ipsum))
         return

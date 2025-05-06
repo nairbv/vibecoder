@@ -13,9 +13,9 @@ async def test_mock_agent_basic_response():
 
     # This should yield AgentResponse instances
     async def mock_ask(input):
-        yield AgentResponse(message="Lorem ipsum dolor sit amet.")
+        yield AgentResponse(content="Lorem ipsum dolor sit amet.")
         for i in range(1, 11):
-            yield AgentResponse(message=f"Response {i}")
+            yield AgentResponse(content=f"Response {i}")
 
     mock_agent.ask = mock_ask  # Use the mock implementation
 
@@ -23,7 +23,7 @@ async def test_mock_agent_basic_response():
     assert isinstance(responses[0], AgentResponse)
     assert len(responses) == 11  # change this based on the number of responses yielded
     assert all(isinstance(line, AgentResponse) for line in responses)
-    assert "Lorem ipsum" in responses[0].message
+    assert "Lorem ipsum" in responses[0].content
 
 
 @pytest.mark.asyncio
@@ -50,4 +50,4 @@ async def test_compare_mock_with_agent():
 
     assert len(real_response) == 1
     assert len(mock_response) == 10
-    assert "Lorem ipsum" in mock_response[0].message
+    assert "Lorem ipsum" in mock_response[0].content

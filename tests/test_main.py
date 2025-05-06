@@ -12,8 +12,10 @@ def setup_mock_agent():
     """Sets up a mock agent with expected behaviors for use in tests."""
 
     async def mock_ask(*args, **kwargs):
-        yield AgentResponse(message="This is a test response")
-        yield ToolUse(name="mock_tool", arguments=["arg1", "arg2"])  # Sample tool call
+        yield AgentResponse(content="This is a test response")
+        yield ToolUse(
+            tool_name="mock_tool", arguments=["arg1", "arg2"]
+        )  # Sample tool call
 
     mock_agent = AsyncMock()
     mock_agent.ask = mock_ask
