@@ -73,7 +73,6 @@ class ToolUse(AgentMessage):
 class ToolResult(AgentMessage):
     tool_name: str = ""
     tool_call_id: str = ""
-    arguments: dict[str] = field(default_factory=list)
 
     def to_openai_dict(self):
         return {
@@ -177,7 +176,6 @@ class OpenAIAgent(BaseAgent):
                         content=result,
                         tool_name=tool_name,
                         tool_call_id=call.id,
-                        arguments=args,
                     )
                     yield tool_result
 
