@@ -36,7 +36,7 @@ class ApplyPatchTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         patch_text = args.get("input")
         if not patch_text:
             return "[Error: Missing 'input' (patch text).]"

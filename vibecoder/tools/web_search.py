@@ -2,6 +2,7 @@ import json
 import os
 from typing import Any, Dict
 
+import httpx
 import requests
 from dotenv import load_dotenv
 
@@ -55,7 +56,12 @@ class SearchTool(Tool):
             },
         }
 
-    def do_search(self, args: Dict[str, Any]) -> dict:
+    async def fetch_url(self, url: str, headers, params, timeout) -> str:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.get(url, headers=headers, params=params)
+            return resp
+
+    async def do_search(self, args: Dict[str, Any]) -> dict:
         engine = args.get("engine", "brave")
         if engine not in self._SUPPORTED_ENGINES:
             raise Exception(
@@ -74,7 +80,7 @@ class SearchTool(Tool):
                 count = min(max(1, int(count)), self._MAX_RESULTS)
             headers = {"Accept": "application/json", "X-Subscription-Token": brave_key}
             params = {"q": query, "count": count}
-            resp = requests.get(
+            resp = await self.fetch_url(  # requests.get(
                 self._BRAVE_API_URL, headers=headers, params=params, timeout=10
             )
             resp.raise_for_status()
@@ -93,10 +99,10 @@ class SearchTool(Tool):
         else:
             raise Exception(f"Unexpected engine {engine}")
 
-    def run(self, args: Dict[str, Any]) -> str:
+    async def run(self, args: Dict[str, Any]) -> str:
         try:
             query = args.get("query")
-            results = self.do_search(args)
+            results = await self.do_search(args)
             return _format_search_results_for_prompt(query, results)
         except Exception as e:
             return f"[Error in web search] {e}"

@@ -34,7 +34,7 @@ class MoveTool(Tool):
     def prompt_description(self) -> str:
         return "Use this tool to move or rename files within the workspace."
 
-    def run(self, args: dict) -> str:
+    async def run(self, args: dict) -> str:
         origin = args.get("origin")
         destination = args.get("destination")
 

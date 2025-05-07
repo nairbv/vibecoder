@@ -1,5 +1,5 @@
+import asyncio
 import os
-import subprocess
 from typing import Dict, List
 
 from vibecoder.tools.base import Tool
@@ -47,21 +47,27 @@ class GitTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         command = args.get("command")
         if command not in self.supported_commands:
-            return f"Error: Attempted to use unsupported git command {command}. Only [{', '.join(self.supported_commands)}] are supported"
+            return f"Error: Attempted to use unsupported git command '{command}'. Only [{', '.join(self.supported_commands)}] are supported"
+
         options = args.get("options", [])
         paths = args.get("paths", [])
 
         git_command = ["git", command] + options + paths
 
         try:
-            result = subprocess.run(
-                git_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            proc = await asyncio.create_subprocess_exec(
+                *git_command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
-            if result.returncode != 0:
-                return f"Error: {result.stderr.decode('utf-8')}"
-            return result.stdout.decode("utf-8")
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                return f"Error: {stderr.decode().strip()}"
+            return stdout.decode().strip()
+
         except Exception as e:
             return f"[Error executing git command '{' '.join(git_command)}': {e}]"

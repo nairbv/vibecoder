@@ -1,3 +1,4 @@
+import asyncio
 import io
 import os
 import subprocess
@@ -58,7 +59,7 @@ class PytestTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         paths: List[str] = args.get("paths", [])
         verbose: bool = args.get("verbose", False)
         quiet: bool = args.get("quiet", False)
@@ -92,22 +93,25 @@ class PytestTool(Tool):
         command = ["pytest"] + pytest_args
 
         try:
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=timeout,
+            proc = await asyncio.create_subprocess_exec(
+                *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
-        except subprocess.TimeoutExpired as e:
-            return f"[Error: pytest run exceeded timeout of {timeout} seconds and was killed.]"
+
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(), timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.communicate()  # Clean up to avoid zombies
+                return f"[Error: pytest run exceeded timeout of {timeout} seconds and was killed.]"
+
+            result_text = f"Exit code: {proc.returncode}\n\n"
+            if stdout and stdout.strip():
+                result_text += f"STDOUT:\n{stdout.decode().strip()}\n"
+            if stderr and stderr.strip():
+                result_text += f"STDERR:\n{stderr.decode().strip()}\n"
+            return result_text.strip()
+
         except Exception as e:
             return f"[Error running pytest: {e}]"
-
-        result_text = f"Exit code: {result.returncode}\n\n"
-        if result.stdout.strip():
-            result_text += f"STDOUT:\n{result.stdout}\n"
-        if result.stderr.strip():
-            result_text += f"STDERR:\n{result.stderr}\n"
-
-        return result_text.strip()

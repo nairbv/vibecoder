@@ -39,7 +39,7 @@ class ApplyDiffPatchTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         """Apply the patch text using the `patch` command and return all output."""
         patch_text = args.get("patch_text")
         if not patch_text:

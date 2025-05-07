@@ -45,7 +45,7 @@ class GrepTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         if "pattern" not in args:
             return "[Error in call to grep] `pattern` is required"
         pattern = args["pattern"]
