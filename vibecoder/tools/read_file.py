@@ -1,6 +1,8 @@
 import os
 from typing import Dict
 
+import aiofiles
+
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -45,17 +47,29 @@ class ReadFileTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         path = args.get("path")
-        start = args.get("start", None)
-        end = args.get("end", None)
+        start = args.get("start")
+        end = args.get("end")
+
+        if not path:
+            return "[Error: 'path' argument is required]"
+
         try:
-            with open(path, "r") as f:
-                lines = f.readlines()
-                # Adjust line number based on 1-indexed argument
-                start = start or 0
-                end = end or len(lines)
-                return "".join(lines[start:end])
+            async with aiofiles.open(path, "r") as f:
+                lines = await f.readlines()
+
+            start = start or 0
+            end = end or len(lines)
+
+            # Validate and sanitize indices
+            if not isinstance(start, int) or not isinstance(end, int):
+                return "[Error: 'start' and 'end' must be integers]"
+
+            start = max(0, start)
+            end = min(len(lines), end)
+
+            return "".join(lines[start:end])
 
         except Exception as e:
             return f"[Error reading file '{path}': {e}]"

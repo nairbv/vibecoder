@@ -43,7 +43,7 @@ class WriteFileTool(Tool):
             },
         }
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         path = args.get("path")
         content = args.get("content")
         append = args.get("append", False)
@@ -54,10 +54,14 @@ class WriteFileTool(Tool):
         try:
             directory = os.path.dirname(path)
             if directory:
-                os.makedirs(directory, exist_ok=True)
+                # Run blocking mkdir in thread pool
+                await asyncio.to_thread(os.makedirs, directory, exist_ok=True)
+
             mode = "a" if append else "w"
-            with open(path, mode) as f:
-                f.write(content)
+            async with aiofiles.open(path, mode) as f:
+                await f.write(content)
+
             return f"[Successfully wrote to '{path}']"
+
         except Exception as e:
             return f"[Error writing file '{path}': {e}]"

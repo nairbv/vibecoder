@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shlex
 import subprocess
@@ -68,7 +69,7 @@ class TreeFilesTool(Tool):
             path = path.replace("..", "")
         return path.strip()
 
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         cmd = ["tree"]
 
         # Path
@@ -99,9 +100,14 @@ class TreeFilesTool(Tool):
             cmd.append("--du")
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            return result.stdout
-        except subprocess.CalledProcessError as e:
-            return f"[tree command failed: {e.stderr.strip()}]"
+            proc = await asyncio.create_subprocess_exec(
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                return f"Error: {stderr.decode().strip()}"
+            return stdout.decode().strip()
+
         except Exception as e:
-            return f"[Error running tree: {e}]"
+            return f"[Error executing git command '{' '.join(git_command)}': {e}]"

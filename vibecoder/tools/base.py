@@ -18,7 +18,7 @@ class Tool(ABC):
         pass
 
     @abstractmethod
-    def run(self, args: Dict) -> str:
+    async def run(self, args: Dict) -> str:
         pass
 
     @property

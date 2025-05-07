@@ -1,6 +1,6 @@
-# fetch_url Tool
+# `fetch_url` Tool
 
-Retrieves and extracts meaningful web content from a URL using the trafilatura library.
+`fetch_url(url)` - retrieves and extracts meaningful web content from a URL. This tool uses `BeautifulSoup` and `markdownify` to return the main content of the page converted to Markdown format (preserving URLs).
 
 ## Parameters
 
@@ -8,4 +8,4 @@ Retrieves and extracts meaningful web content from a URL using the trafilatura l
 
 ## Description
 
-Given a URL, this tool fetches its HTML content and extracts readable main text, including links, using trafilatura. Returns extracted text, or error message if fetching or extraction fails.
+Given a URL, this tool fetches its HTML content and extracts readable main text, including links. Returns extracted text as markdown, or an error message if the fetching or extraction fails.

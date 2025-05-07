@@ -1,4 +1,7 @@
+import base64
+import hashlib
 import json
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
@@ -34,11 +37,33 @@ class AgentResponse(AgentMessage):
         return {"role": "assistant", "content": self.content}
 
 
+def to_openai_tool_call_id(original: str) -> str:
+    if len(original) < 40:
+        return original
+    # Hash and base64-encode
+    h = hashlib.sha256(original.encode()).digest()
+    b64 = base64.b64encode(h).decode()
+
+    # Remove non-alphanumerics (Base64 includes + and /)
+    alnum = re.sub(r"[^a-zA-Z0-9]", "", b64)
+
+    # Truncate to fit within 40 chars total, accounting for "call_"
+    return "call_" + alnum[:35]
+
+
 @dataclass
 class ToolUse(AgentMessage):
     tool_name: str = ""
     tool_call_id: str = ""
     arguments: dict[str] = field(default_factory=list)
+
+    def __repr__(self):
+        args_str = str(self.arguments)
+        if len(args_str) > 200:
+            args_str = args_str[:200] + "..."
+        tool_call_str = f"{self.tool_name}({args_str})"
+        text = f"🔧{tool_call_str}"
+        return text
 
     def to_openai_dict(self):
         return {
@@ -73,6 +98,13 @@ class ToolUse(AgentMessage):
 class ToolResult(AgentMessage):
     tool_name: str = ""
     tool_call_id: str = ""
+
+    def __repr__(self):
+        cleaned = self.content.strip().replace("\n", "\\n")
+        text = cleaned[:100]
+        if len(cleaned) >= 100:
+            text += "..."
+        return text
 
     def to_openai_dict(self):
         return {
@@ -118,6 +150,10 @@ class OpenAIAgent(BaseAgent):
         self.client = client
         self.messages = [{"role": "system", "content": system_prompt}]
         for message in messages:
+            # ensure compliance with openai's 40-char tool call id limit.
+            if isinstance(message, ToolUse) or isinstance(message, ToolResult):
+                message.tool_call_id = to_openai_tool_call_id(message.tool_call_id)
+
             self.messages.append(message.to_openai_dict())
 
     def set_model(self, model: str):
@@ -166,9 +202,9 @@ class OpenAIAgent(BaseAgent):
                     yield tool_use
 
                     if tool_name not in self.tools:
-                        result = f"[Tool {tool_name} not implemented]"
+                        result = f"[Tool {tool_name} not implemented] Available tools: {', '.join(self.tools.keys())}"
                     else:
-                        result = self.tools[tool_name].run(args)
+                        result = await self.tools[tool_name].run(args)
                         if len(result):
                             result += "\n"
 
@@ -238,14 +274,14 @@ class AnthropicAgent(BaseAgent):
             )
 
             usage = response.usage
-            input_tokens = usage.prompt_tokens
-            output_tokens = usage.completion_tokens
+            input_tokens = usage.input_tokens
+            output_tokens = usage.output_tokens
 
             has_tool_use = False
             for content_block in response.content:
                 if content_block.type == "text":
                     response = AgentResponse(
-                        content_block.text,
+                        content=content_block.text,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
                     )
@@ -258,32 +294,31 @@ class AnthropicAgent(BaseAgent):
                     tool_name = tool_use.name
                     args = tool_use.input
 
-                    tool_use = ToolUse(
+                    tool_use_result = ToolUse(
                         tool_name=tool_name,
                         tool_call_id=tool_use.id,
                         arguments=args,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
                     )
-                    yield tool_use
+                    yield tool_use_result
 
                     if tool_name not in self.tools:
                         result = f"[Tool {tool_name} not implemented]"
                     else:
-                        result = self.tools[tool_name].run(args)
+                        result = await self.tools[tool_name].run(args)
                         if len(result):
                             result += "\n"
 
                     tool_result = ToolResult(
                         tool_name=tool_name,
                         tool_call_id=tool_use.id,
-                        arguments=args,
                         content=result,
                     )
 
                     yield tool_result
 
-                    self.messages.append(tool_use.to_anthropic_dict())
+                    self.messages.append(tool_use_result.to_anthropic_dict())
                     self.messages.append(tool_result.to_anthropic_dict())
 
             if has_tool_use:
