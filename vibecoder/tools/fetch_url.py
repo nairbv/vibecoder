@@ -58,14 +58,31 @@ async def fetch_bs(url, min_words=5) -> str:
         return f"[Error] {e}"
 
 
-def html_to_markdown(html, min_words=5) -> str:
+def html_to_markdown(html: str, min_words: int = 2) -> str:
     soup = BeautifulSoup(html, "lxml")
 
+    # 1. Drop obviously non-content elements
     for tag in soup(
-        ["script", "style", "footer", "nav", "aside", "noscript", "iframe", "form"]
+        [
+            "script",
+            "style",
+            "footer",
+            "nav",
+            "aside",
+            "noscript",
+            "iframe",
+            "form",
+            "figure",
+            "table",
+        ]
     ):
         tag.decompose()
 
+    # 2. Wikipedia-specific junk
+    for t in soup.select("sup.reference, span.mw-editsection, div.reflist"):
+        t.decompose()
+
+    # 3. Generic ad / banner classes
     junk_classes = [
         "header",
         "sidebar",
@@ -78,22 +95,39 @@ def html_to_markdown(html, min_words=5) -> str:
         "cookie",
         "subscribe",
     ]
-    for class_name in junk_classes:
-        for tag in soup.find_all(
-            class_=lambda c: c
-            and any(
-                cls.lower() == class_name for cls in (c if isinstance(c, list) else [c])
-            )
-        ):
-            tag.decompose()
+    for cls in junk_classes:
+        for t in soup.select(f".{cls}"):
+            t.decompose()
 
-    for tag in soup.find_all(text=True):
-        if tag.parent.name not in ["a", "p", "li", "span", "div", "section"]:
+    # 4. Remove tiny text fragments (but keep links & headings)
+    for node in list(soup.strings):
+        text = node.strip()
+        parent = node.parent.name
+
+        if not text:
+            node.extract()
             continue
-        if len(tag.strip().split()) < min_words:
-            tag.extract()
 
-    cleaned_html = soup.find("div", id="bodyContent") or soup.body or soup
-    cleaned_html = str(cleaned_html)
+        # keep anchors & headings
+        if parent in {
+            "a",
+            "strong",
+            "b",
+            "em",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "p",
+            "li",
+        }:
+            continue
 
-    return md(cleaned_html, strip=["img", "video", "iframe"])
+        if len(text.split()) < min_words:
+            node.extract()
+
+    # 5. Pick the main content node (Wikipedia = #bodyContent)
+    main = soup.find("div", id="bodyContent") or soup.body or soup
+    return md(str(main), strip=["img", "video", "iframe"])
