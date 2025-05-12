@@ -48,10 +48,10 @@ class FetchUrlTool(Tool):
 
 async def fetch_bs(url, min_words=5) -> str:
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
             resp = await client.get(url)
             if resp.status_code != 200:
-                return f"[Error] Non-OK status code `{resp.status_code}`"
+                return f"[Error] Non-OK status code `{resp.status_code}` - {resp.text}"
             html = resp.text
         return html_to_markdown(html, min_words=min_words)
     except httpx.RequestError as e:
