@@ -29,6 +29,31 @@ class TestFetchUrlTool(unittest.TestCase):
 
     # Note: An actual fetch test is not robust for unit test suites (depends on network), so not included
 
+    def test_html_to_markdown_basic(self):
+        """
+        Test html_to_markdown utility directly with static HTML.
+        """
+        from vibecoder.tools.fetch_url import html_to_markdown
+
+        html = "<html><body>" "<p>Hello <strong>World</strong>!</p>" "</body></html>"
+        md = html_to_markdown(html)
+        # Basic paragraph and strong should be converted
+        self.assertIn("Hello **World**!", md)
+
+    def test_html_to_markdown_strip_tags(self):
+        from vibecoder.tools.fetch_url import html_to_markdown
+
+        html = (
+            "<html><body>"
+            "<script>ignore()</script>"
+            "<p>Keep this text.</p>"
+            "<span>Hi</span>"  # should be removed by min_words default
+            "</body></html>"
+        )
+        md = html_to_markdown(html, min_words=2)
+        self.assertIn("Keep this text.", md)
+        self.assertNotIn("Hi", md)
+
 
 if __name__ == "__main__":
     unittest.main()
