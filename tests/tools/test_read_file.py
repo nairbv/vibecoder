@@ -1,3 +1,5 @@
+import asyncio
+
 from vibecoder.tools.read_file import ReadFileTool
 
 
@@ -13,7 +15,8 @@ This is line three."""
     )
 
     tool = ReadFileTool()
-    output = tool.run({"path": str(file_path)})
+    # Run the async tool
+    output = asyncio.run(tool.run({"path": str(file_path)}))
 
     assert "Hello, vibecoder!" in output
 
@@ -29,7 +32,8 @@ This is line three."""
     )
 
     tool = ReadFileTool()
-    output = tool.run({"path": str(file_path), "start": 1})
+    # Run the async tool with start
+    output = asyncio.run(tool.run({"path": str(file_path), "start": 1}))
 
     assert "Welcome to the test file." in output
     assert "Hello, vibecoder!" not in output
@@ -46,7 +50,8 @@ This is line three."""
     )
 
     tool = ReadFileTool()
-    output = tool.run({"path": str(file_path), "start": 1, "end": 2})
+    # Run async tool with start and end
+    output = asyncio.run(tool.run({"path": str(file_path), "start": 1, "end": 2}))
 
     assert "Welcome to the test file." in output
     assert "This is line three." not in output
@@ -56,6 +61,7 @@ def test_read_file_missing_file():
     """Test reading a non-existent file returns error."""
 
     tool = ReadFileTool()
-    output = tool.run({"path": "nonexistent_file.txt"})
+    # Run async tool for missing file
+    output = asyncio.run(tool.run({"path": "nonexistent_file.txt"}))
 
     assert "Error" in output

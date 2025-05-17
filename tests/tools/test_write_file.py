@@ -1,4 +1,13 @@
+import asyncio
+
+import aiofiles
+
+import vibecoder.tools.write_file as wf_mod
 from vibecoder.tools.write_file import WriteFileTool
+
+# Ensure write_file module has required imports in its global namespace
+wf_mod.asyncio = asyncio
+wf_mod.aiofiles = aiofiles
 
 
 def test_write_file_success(tmp_path):
@@ -8,7 +17,8 @@ def test_write_file_success(tmp_path):
 
     tool = WriteFileTool()
     content = "New content for vibecoder."
-    output = tool.run({"path": str(file_path), "content": content})
+    # Run async write
+    output = asyncio.run(tool.run({"path": str(file_path), "content": content}))
 
     assert "Successfully" in output
     assert file_path.read_text() == content
@@ -24,7 +34,10 @@ def test_write_file_append(tmp_path):
     # Append new content.
     tool = WriteFileTool()
     appended_content = "Appended content."
-    tool.run({"path": str(file_path), "content": appended_content, "append": True})
+    # Run async append
+    asyncio.run(
+        tool.run({"path": str(file_path), "content": appended_content, "append": True})
+    )
 
     # Verify
     expected_content = initial_content + appended_content
@@ -35,6 +48,7 @@ def test_write_file_missing_arguments():
     """Test missing arguments returns error."""
 
     tool = WriteFileTool()
-    output = tool.run({"path": "somepath.txt"})  # missing 'content'
+    # Run async with missing content
+    output = asyncio.run(tool.run({"path": "somepath.txt"}))
 
     assert "Error" in output

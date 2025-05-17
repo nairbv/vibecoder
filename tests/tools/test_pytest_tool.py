@@ -1,4 +1,12 @@
+import asyncio
+import os
+import tempfile
 import time
+import warnings
+
+import pytest
+
+from vibecoder.tools.pytest_tool import PytestTool
 
 
 def test_pytest_tool_timeout():
@@ -27,7 +35,8 @@ def test_hang():
         # Change cwd to temp dir for isolated run
         try:
             os.chdir(tmpdir)
-            output = tool.run(args)
+            # Run the async tool with timeout
+            output = asyncio.run(tool.run(args))
         finally:
             os.chdir(previous_dir)
 
@@ -36,11 +45,9 @@ def test_hang():
         ), f"Unexpected output: {output}"
 
 
-import os
-import tempfile
-import warnings
-
-from vibecoder.tools.pytest_tool import PytestTool
+def test_pytest_tool_basic_run():
+    """Test running PytestTool on a small passing test file."""
+    tool = PytestTool()
 
 
 def test_pytest_tool_basic_run():
@@ -73,7 +80,8 @@ def test_dummy():
             # Change the current directory for running the tool
             try:
                 os.chdir(tmpdir)
-                output = tool.run(args)
+                # Run the async tool for basic run
+                output = asyncio.run(tool.run(args))
             finally:
                 os.chdir(previous_dir)
 
@@ -110,12 +118,13 @@ def test_fail():
             # Use the temporary directory as a fallback
             previous_dir = tempfile.gettempdir()
 
-            # Change the current directory for running the tool
-            try:
-                os.chdir(tmpdir)
-                output = tool.run(args)
-            finally:
-                os.chdir(previous_dir)
+        # Change the current directory for running the tool
+        try:
+            os.chdir(tmpdir)
+            # Run the async tool for failure capture
+            output = asyncio.run(tool.run(args))
+        finally:
+            os.chdir(previous_dir)
 
         assert "Exit code:" in output
         assert "STDOUT:" in output

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import unittest
 from unittest.mock import patch
@@ -35,9 +36,16 @@ class TestWebSearchTool(unittest.TestCase):
                 }
 
         mock_get.return_value = FakeResp()
+
+        # Override fetch_url to use FakeResp
+        async def fake_fetch_url(url, headers, params, timeout):
+            return FakeResp()
+
+        self.tool.fetch_url = fake_fetch_url
         query = "climate change news"
         args = {"query": query, "count": 2}
-        out = self.tool.run(args)
+        # Run asynchronous tool.run
+        out = asyncio.run(self.tool.run(args))
         assert f"## Search results for: {query}" in out
         assert "[ABC](https://abc.com)" in out
         assert "DescA" in out
@@ -45,41 +53,48 @@ class TestWebSearchTool(unittest.TestCase):
         assert "DescB" in out
         assert out.count("- (") == 2
 
-    @patch("requests.get")
-    def test_run_empty_results(self, mock_get):
-        class FakeResp:
+    def test_run_empty_results(self):
+        # Simulate empty search results by patching fetch_url
+        class DummyResp:
             def raise_for_status(self):
                 pass
 
             def json(self):
                 return {"web": {"results": []}}
 
-        mock_get.return_value = FakeResp()
+        # Override async fetch_url to return DummyResp
+        async def fake_fetch_url(url, headers, params, timeout):
+            return DummyResp()
+
+        self.tool.fetch_url = fake_fetch_url
+        # Ensure API key is set for BRAVE
+        os.environ["BRAVE_API_KEY"] = "fake-key"
         args = {"query": "somethingnoresults", "count": 3}
-        out = self.tool.run(args)
+        out = asyncio.run(self.tool.run(args))
         assert "No results found" in out
 
     def test_run_api_key_missing(self):
         if "BRAVE_SEARCH_API_KEY" in os.environ:
             del os.environ["BRAVE_SEARCH_API_KEY"]
-        out = self.tool.run({"query": "x"})
+        out = asyncio.run(self.tool.run({"query": "x"}))
         assert "API key" in out or "Error" in out
 
-    @patch("requests.get")
-    def test_run_http_error(self, mock_get):
+    def test_run_http_error(self):
+        # Simulate HTTP error via fetch_url
         class Boom(Exception):
             pass
 
-        def fail(*a, **kwa):
+        async def fake_fetch_url(url, headers, params, timeout):
             raise Boom("BOOM_FAIL")
 
-        mock_get.side_effect = fail
+        self.tool.fetch_url = fake_fetch_url
         os.environ["BRAVE_SEARCH_API_KEY"] = "fake-key"
-        out = self.tool.run({"query": "foo"})
+        out = asyncio.run(self.tool.run({"query": "foo"}))
+        # Expect the Boom message in error output
         assert "BOOM_FAIL" in out
 
     def test_unsupported_engine(self):
-        out = self.tool.run({"query": "x", "engine": "not_valid"})
+        out = asyncio.run(self.tool.run({"query": "x", "engine": "not_valid"}))
         assert "not supported" in out or "Error" in out, out
 
     def test_do_search_direct(self):
@@ -93,11 +108,16 @@ class TestWebSearchTool(unittest.TestCase):
                     "web": {"results": [{"url": "a", "title": "b", "description": "c"}]}
                 }
 
-        with patch("requests.get", return_value=DummyResp()):
-            os.environ["BRAVE_SEARCH_API_KEY"] = "z"
-            out = self.tool.do_search({"query": "a", "count": 1})
-            assert isinstance(out, list)
-            assert out[0]["title"] == "b"
+        # Patch fetch_url to return dummy response asynchronously
+        async def fake_fetch_url(url, headers, params, timeout):
+            return DummyResp()
+
+        self.tool.fetch_url = fake_fetch_url
+        # Ensure API key for Brave search
+        os.environ["BRAVE_API_KEY"] = "dummy-key"
+        out = asyncio.run(self.tool.do_search({"query": "a", "count": 1}))
+        assert isinstance(out, list)
+        assert out[0]["title"] == "b"
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 import unittest
@@ -19,15 +20,21 @@ class TestGrepTool(unittest.TestCase):
         # Create a temporary file with known content
         with open(os.path.join(self.test_dir.name, "test.txt"), "w") as f:
             f.write("this is a test string")
-        result = self.grep_tool.run({"pattern": "test", "paths": [self.test_dir.name]})
+        # Run the async tool
+        result = asyncio.run(
+            self.grep_tool.run({"pattern": "test", "paths": [self.test_dir.name]})
+        )
         self.assertIn("test", result)
 
     def test_case_insensitive_search(self):
         # Create a temporary file with known content
         with open(os.path.join(self.test_dir.name, "case.txt"), "w") as f:
             f.write("This is a Test string")
-        result = self.grep_tool.run(
-            {"pattern": "test", "paths": [self.test_dir.name], "ignore_case": True}
+        # Run the async tool with ignore_case
+        result = asyncio.run(
+            self.grep_tool.run(
+                {"pattern": "test", "paths": [self.test_dir.name], "ignore_case": True}
+            )
         )
         self.assertIn("This is a Test string", result)
 
@@ -35,12 +42,15 @@ class TestGrepTool(unittest.TestCase):
         # Create a matching Python file within the directory
         with open(os.path.join(self.test_dir.name, "script.py"), "w") as f:
             f.write("def func(): pass")
-        result = self.grep_tool.run(
-            {
-                "pattern": "def ",
-                "paths": [self.test_dir.name],
-                "include_pattern": "*.py",
-            }
+        # Run the async tool with include_pattern
+        result = asyncio.run(
+            self.grep_tool.run(
+                {
+                    "pattern": "def ",
+                    "paths": [self.test_dir.name],
+                    "include_pattern": "*.py",
+                }
+            )
         )
         self.assertIn("def func(): pass", result)
 
@@ -52,17 +62,21 @@ class TestGrepTool(unittest.TestCase):
         with open(os.path.join(self.test_dir.name, "include.txt"), "w") as f:
             f.write("import sys")
         # Run grep tool
-        result = self.grep_tool.run(
-            {
-                "pattern": "import",
-                "paths": [self.test_dir.name],
-                "ignore_patterns": ["test_exclude.txt"],
-            }
+        # Run the async tool with ignore_patterns
+        result = asyncio.run(
+            self.grep_tool.run(
+                {
+                    "pattern": "import",
+                    "paths": [self.test_dir.name],
+                    "ignore_patterns": ["test_exclude.txt"],
+                }
+            )
         )
         self.assertNotIn("test_exclude.txt:import os", result)
 
     def test_empty_paths(self):
-        result = self.grep_tool.run({"pattern": "test", "paths": []})
+        # No paths provided should error
+        result = asyncio.run(self.grep_tool.run({"pattern": "test", "paths": []}))
         self.assertEqual(result, "[Error: No valid paths provided!]")
 
 
