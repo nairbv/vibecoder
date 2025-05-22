@@ -23,7 +23,7 @@ def test_apply_patch_success(monkeypatch):
 
     args = {"input": "*** Begin Patch\n...patch content...\n*** End Patch"}
     # Run the async tool
-    output = asyncio.run(tool.run(args))
+    output = asyncio.run(tool.run_helper(args))
 
     assert "Done!" in output
     assert "*** Begin Patch" in called["patch_text"]
@@ -34,7 +34,7 @@ def test_apply_patch_missing_input():
 
     tool = ApplyPatchTool()
     # No input provided
-    output = asyncio.run(tool.run({}))
+    output = asyncio.run(tool.run_helper({}))
     assert "Error" in output
     assert "input" in output
 
@@ -53,7 +53,7 @@ def test_apply_patch_diff_error(monkeypatch):
 
     args = {"input": "*** Begin Patch\n...bad patch...\n*** End Patch"}
     # Run the async tool
-    output = asyncio.run(tool.run(args))
+    output = asyncio.run(tool.run_helper(args))
 
     assert "Patch application failed" in output
 
@@ -72,6 +72,6 @@ def test_apply_patch_generic_exception(monkeypatch):
 
     args = {"input": "*** Begin Patch\n...patch content...\n*** End Patch"}
     # Run the async tool
-    output = asyncio.run(tool.run(args))
+    output = asyncio.run(tool.run_helper(args))
 
     assert "Unexpected error" in output

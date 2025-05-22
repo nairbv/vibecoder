@@ -1,5 +1,6 @@
 import os
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 
@@ -34,7 +35,7 @@ class MoveTool(Tool):
     def prompt_description(self) -> str:
         return "Use this tool to move or rename files within the workspace."
 
-    async def run(self, args: dict) -> str:
+    async def run_helper(self, args: dict) -> str:
         origin = args.get("origin")
         destination = args.get("destination")
 
@@ -61,3 +62,11 @@ class MoveTool(Tool):
             return f"The file or directory '{origin}' was not found."
         except Exception as e:
             return f"An error occurred: {e}."
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

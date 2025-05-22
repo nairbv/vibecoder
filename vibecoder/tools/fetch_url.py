@@ -5,6 +5,7 @@ import httpx
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -39,11 +40,19 @@ class FetchUrlTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         url = args.get("url")
         if not url:
             return "[Error: Missing 'url' argument.]"
         return await fetch_bs(url)
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )
 
 
 async def fetch_bs(url, min_words=5) -> str:

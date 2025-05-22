@@ -2,6 +2,7 @@ import os
 import subprocess
 from typing import Dict
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -39,7 +40,7 @@ class ApplyDiffPatchTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         """Apply the patch text using the `patch` command and return all output."""
         patch_text = args.get("patch_text")
         if not patch_text:
@@ -67,3 +68,11 @@ class ApplyDiffPatchTool(Tool):
 
         except Exception as e:
             return f"[Unexpected error during patch application: {str(e)}]"
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

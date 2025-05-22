@@ -36,7 +36,7 @@ def test_hang():
         try:
             os.chdir(tmpdir)
             # Run the async tool with timeout
-            output = asyncio.run(tool.run(args))
+            output = asyncio.run(tool.run_helper(args))
         finally:
             os.chdir(previous_dir)
 
@@ -81,7 +81,7 @@ def test_dummy():
             try:
                 os.chdir(tmpdir)
                 # Run the async tool for basic run
-                output = asyncio.run(tool.run(args))
+                output = asyncio.run(tool.run_helper(args))
             finally:
                 os.chdir(previous_dir)
 
@@ -122,7 +122,7 @@ def test_fail():
         try:
             os.chdir(tmpdir)
             # Run the async tool for failure capture
-            output = asyncio.run(tool.run(args))
+            output = asyncio.run(tool.run_helper(args))
         finally:
             os.chdir(previous_dir)
 

@@ -16,7 +16,7 @@ This is line three."""
 
     tool = ReadFileTool()
     # Run the async tool
-    output = asyncio.run(tool.run({"path": str(file_path)}))
+    output = asyncio.run(tool.run_helper({"path": str(file_path)}))
 
     assert "Hello, vibecoder!" in output
 
@@ -33,7 +33,7 @@ This is line three."""
 
     tool = ReadFileTool()
     # Run the async tool with start
-    output = asyncio.run(tool.run({"path": str(file_path), "start": 1}))
+    output = asyncio.run(tool.run_helper({"path": str(file_path), "start": 1}))
 
     assert "Welcome to the test file." in output
     assert "Hello, vibecoder!" not in output
@@ -51,7 +51,9 @@ This is line three."""
 
     tool = ReadFileTool()
     # Run async tool with start and end
-    output = asyncio.run(tool.run({"path": str(file_path), "start": 1, "end": 2}))
+    output = asyncio.run(
+        tool.run_helper({"path": str(file_path), "start": 1, "end": 2})
+    )
 
     assert "Welcome to the test file." in output
     assert "This is line three." not in output
@@ -62,6 +64,6 @@ def test_read_file_missing_file():
 
     tool = ReadFileTool()
     # Run async tool for missing file
-    output = asyncio.run(tool.run({"path": "nonexistent_file.txt"}))
+    output = asyncio.run(tool.run_helper({"path": "nonexistent_file.txt"}))
 
     assert "Error" in output

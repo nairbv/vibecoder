@@ -1,6 +1,7 @@
 import os
 from typing import Dict
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools import apply_patch_lib
 from vibecoder.tools.base import Tool
 
@@ -36,7 +37,7 @@ class ApplyPatchTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         patch_text = args.get("input")
         if not patch_text:
             return "[Error: Missing 'input' (patch text).]"
@@ -53,3 +54,11 @@ class ApplyPatchTool(Tool):
             return f"[Patch application failed: {e}]"
         except Exception as e:
             return f"[Unexpected error during patch: {e}]"
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

@@ -3,38 +3,10 @@ import hashlib
 import json
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import AsyncGenerator, AsyncIterator, Dict, Iterator
+from typing import AsyncIterator, Dict
 
+from vibecoder.messages import AgentMessage, AgentResponse, ToolResult, ToolUse
 from vibecoder.tools.base import Tool
-
-
-@dataclass
-class AgentMessage(ABC):
-    """Base class for all agent messages."""
-
-    input_tokens: int = 0
-    output_tokens: int = 0
-    content: str = ""
-
-    @abstractmethod
-    def to_openai_dict(self) -> dict:
-        pass
-
-    def to_anthropic_dict(self) -> dict:
-        return self.to_openai_dict()
-
-
-@dataclass
-class UserMessage(AgentMessage):
-    def to_openai_dict(self):
-        return {"role": "user", "content": self.content}
-
-
-@dataclass
-class AgentResponse(AgentMessage):
-    def to_openai_dict(self):
-        return {"role": "assistant", "content": self.content}
 
 
 def to_openai_tool_call_id(original: str) -> str:
@@ -49,81 +21,6 @@ def to_openai_tool_call_id(original: str) -> str:
 
     # Truncate to fit within 40 chars total, accounting for "call_"
     return "call_" + alnum[:35]
-
-
-@dataclass
-class ToolUse(AgentMessage):
-    tool_name: str = ""
-    tool_call_id: str = ""
-    arguments: dict[str] = field(default_factory=list)
-
-    def __repr__(self):
-        args_str = str(self.arguments)
-        if len(args_str) > 200:
-            args_str = args_str[:200] + "..."
-        tool_call_str = f"{self.tool_name}({args_str})"
-        text = f"🔧{tool_call_str}"
-        return text
-
-    def to_openai_dict(self):
-        return {
-            "role": "assistant",
-            "tool_calls": [
-                {
-                    "id": self.tool_call_id,
-                    "function": {
-                        "arguments": json.dumps(self.arguments),
-                        "name": self.tool_name,
-                    },
-                    "type": "function",
-                }
-            ],
-        }
-
-    def to_anthropic_dict(self):
-        return {
-            "role": "assistant",
-            "content": [
-                {
-                    "type": "tool_use",
-                    "id": self.tool_call_id,
-                    "name": self.tool_name,
-                    "input": self.arguments,
-                }
-            ],
-        }
-
-
-@dataclass
-class ToolResult(AgentMessage):
-    tool_name: str = ""
-    tool_call_id: str = ""
-
-    def __repr__(self):
-        cleaned = self.content.strip().replace("\n", "\\n")
-        text = cleaned[:100]
-        if len(cleaned) >= 100:
-            text += "..."
-        return text
-
-    def to_openai_dict(self):
-        return {
-            "role": "tool",
-            "tool_call_id": self.tool_call_id,
-            "content": self.content,
-        }
-
-    def to_anthropic_dict(self):
-        return {
-            "role": "user",
-            "content": [
-                {
-                    "type": "tool_result",
-                    "tool_use_id": self.tool_call_id,
-                    "content": self.content,
-                }
-            ],
-        }
 
 
 class BaseAgent(ABC):
@@ -201,18 +98,17 @@ class OpenAIAgent(BaseAgent):
                     )
                     yield tool_use
 
+                    # Execute tool and wrap result in ToolResult
                     if tool_name not in self.tools:
-                        result = f"[Tool {tool_name} not implemented] Available tools: {', '.join(self.tools.keys())}"
+                        content = f"[Tool {tool_name} not implemented] Available tools: {', '.join(self.tools.keys())}"
+                        tool_result = ToolResult(
+                            content=content,
+                            tool_name=tool_name,
+                            tool_call_id=call.id,
+                        )
                     else:
-                        result = await self.tools[tool_name].run(args)
-                        if len(result):
-                            result += "\n"
-
-                    tool_result = ToolResult(
-                        content=result,
-                        tool_name=tool_name,
-                        tool_call_id=call.id,
-                    )
+                        # Delegate execution to tool.run, which returns a ToolResult
+                        tool_result = await self.tools[tool_name].run(tool_use)
                     yield tool_result
 
                     self.messages.append(tool_use.to_openai_dict())
@@ -294,31 +190,30 @@ class AnthropicAgent(BaseAgent):
                     tool_name = tool_use.name
                     args = tool_use.input
 
-                    tool_use_result = ToolUse(
+                    tool_use_msg = ToolUse(
                         tool_name=tool_name,
                         tool_call_id=tool_use.id,
                         arguments=args,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
                     )
-                    yield tool_use_result
+                    yield tool_use_msg
 
+                    # Execute tool and wrap result
                     if tool_name not in self.tools:
-                        result = f"[Tool {tool_name} not implemented]"
+                        content = f"[Tool {tool_name} not implemented]"
+                        tool_result = ToolResult(
+                            content=content,
+                            tool_name=tool_name,
+                            tool_call_id=tool_use.id,
+                        )
                     else:
-                        result = await self.tools[tool_name].run(args)
-                        if len(result):
-                            result += "\n"
-
-                    tool_result = ToolResult(
-                        tool_name=tool_name,
-                        tool_call_id=tool_use.id,
-                        content=result,
-                    )
+                        tool_result = await self.tools[tool_name].execute(tool_use_msg)
 
                     yield tool_result
 
-                    self.messages.append(tool_use_result.to_anthropic_dict())
+                    # Append tool use and result to messages
+                    self.messages.append(tool_use_msg.to_anthropic_dict())
                     self.messages.append(tool_result.to_anthropic_dict())
 
             if has_tool_use:

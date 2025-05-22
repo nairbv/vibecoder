@@ -3,6 +3,7 @@ from typing import Dict
 
 import aiofiles
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -47,7 +48,7 @@ class ReadFileTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         path = args.get("path")
         start = args.get("start")
         end = args.get("end")
@@ -73,3 +74,11 @@ class ReadFileTool(Tool):
 
         except Exception as e:
             return f"[Error reading file '{path}': {e}]"
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

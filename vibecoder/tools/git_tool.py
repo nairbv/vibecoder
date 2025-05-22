@@ -2,6 +2,7 @@ import asyncio
 import os
 from typing import Dict, List
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -47,7 +48,7 @@ class GitTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         command = args.get("command")
         if command not in self.supported_commands:
             return f"Error: Attempted to use unsupported git command '{command}'. Only [{', '.join(self.supported_commands)}] are supported"
@@ -71,3 +72,11 @@ class GitTool(Tool):
 
         except Exception as e:
             return f"[Error executing git command '{' '.join(git_command)}': {e}]"
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

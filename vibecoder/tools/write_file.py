@@ -1,6 +1,7 @@
 import os
 from typing import Dict
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -43,7 +44,7 @@ class WriteFileTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         path = args.get("path")
         content = args.get("content")
         append = args.get("append", False)
@@ -65,3 +66,11 @@ class WriteFileTool(Tool):
 
         except Exception as e:
             return f"[Error writing file '{path}': {e}]"
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

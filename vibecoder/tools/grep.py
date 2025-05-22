@@ -3,6 +3,8 @@ import shlex
 import subprocess
 from typing import Dict
 
+from vibecoder.messages import ToolResult, ToolUse
+
 from .base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -45,7 +47,7 @@ class GrepTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run_helper(self, args: Dict) -> str:
         if "pattern" not in args:
             return "[Error in call to grep] `pattern` is required"
         pattern = args["pattern"]
@@ -89,3 +91,11 @@ class GrepTool(Tool):
         )
 
         return result.stdout if result.returncode in (0, 1) else result.stderr
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )

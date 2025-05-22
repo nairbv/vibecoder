@@ -22,7 +22,9 @@ class TestGrepTool(unittest.TestCase):
             f.write("this is a test string")
         # Run the async tool
         result = asyncio.run(
-            self.grep_tool.run({"pattern": "test", "paths": [self.test_dir.name]})
+            self.grep_tool.run_helper(
+                {"pattern": "test", "paths": [self.test_dir.name]}
+            )
         )
         self.assertIn("test", result)
 
@@ -32,7 +34,7 @@ class TestGrepTool(unittest.TestCase):
             f.write("This is a Test string")
         # Run the async tool with ignore_case
         result = asyncio.run(
-            self.grep_tool.run(
+            self.grep_tool.run_helper(
                 {"pattern": "test", "paths": [self.test_dir.name], "ignore_case": True}
             )
         )
@@ -44,7 +46,7 @@ class TestGrepTool(unittest.TestCase):
             f.write("def func(): pass")
         # Run the async tool with include_pattern
         result = asyncio.run(
-            self.grep_tool.run(
+            self.grep_tool.run_helper(
                 {
                     "pattern": "def ",
                     "paths": [self.test_dir.name],
@@ -64,7 +66,7 @@ class TestGrepTool(unittest.TestCase):
         # Run grep tool
         # Run the async tool with ignore_patterns
         result = asyncio.run(
-            self.grep_tool.run(
+            self.grep_tool.run_helper(
                 {
                     "pattern": "import",
                     "paths": [self.test_dir.name],
@@ -76,7 +78,9 @@ class TestGrepTool(unittest.TestCase):
 
     def test_empty_paths(self):
         # No paths provided should error
-        result = asyncio.run(self.grep_tool.run({"pattern": "test", "paths": []}))
+        result = asyncio.run(
+            self.grep_tool.run_helper({"pattern": "test", "paths": []})
+        )
         self.assertEqual(result, "[Error: No valid paths provided!]")
 
 

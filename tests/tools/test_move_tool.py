@@ -18,7 +18,7 @@ def test_move_tool_rename_file():
 
         # Execute tool asynchronously
         result = asyncio.run(
-            tool.run({"origin": "old_name.txt", "destination": "new_name.txt"})
+            tool.run_helper({"origin": "old_name.txt", "destination": "new_name.txt"})
         )
 
         # Verify
@@ -34,7 +34,7 @@ def test_move_tool_invalid_path():
         os.chdir(tmpdir)
         # Execute tool with invalid path
         result = asyncio.run(
-            tool.run({"origin": "/outside.txt", "destination": "new_name.txt"})
+            tool.run_helper({"origin": "/outside.txt", "destination": "new_name.txt"})
         )
 
         # Verify
@@ -48,7 +48,9 @@ def test_move_tool_file_not_found():
         os.chdir(tmpdir)
         # Execute tool with non-existing file
         result = asyncio.run(
-            tool.run({"origin": "non_existent.txt", "destination": "new_name.txt"})
+            tool.run_helper(
+                {"origin": "non_existent.txt", "destination": "new_name.txt"}
+            )
         )
 
         # Verify

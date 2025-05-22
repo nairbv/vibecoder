@@ -6,6 +6,7 @@ import httpx
 import requests
 from dotenv import load_dotenv
 
+from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -99,13 +100,21 @@ class SearchTool(Tool):
         else:
             raise Exception(f"Unexpected engine {engine}")
 
-    async def run(self, args: Dict[str, Any]) -> str:
+    async def run_helper(self, args: Dict[str, Any]) -> str:
         try:
             query = args.get("query")
             results = await self.do_search(args)
             return _format_search_results_for_prompt(query, results)
         except Exception as e:
             return f"[Error in web search] {e}"
+
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )
 
 
 def _format_search_results_for_prompt(query, results: list[dict]) -> str:

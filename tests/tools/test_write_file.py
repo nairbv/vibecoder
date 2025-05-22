@@ -18,7 +18,7 @@ def test_write_file_success(tmp_path):
     tool = WriteFileTool()
     content = "New content for vibecoder."
     # Run async write
-    output = asyncio.run(tool.run({"path": str(file_path), "content": content}))
+    output = asyncio.run(tool.run_helper({"path": str(file_path), "content": content}))
 
     assert "Successfully" in output
     assert file_path.read_text() == content
@@ -36,7 +36,9 @@ def test_write_file_append(tmp_path):
     appended_content = "Appended content."
     # Run async append
     asyncio.run(
-        tool.run({"path": str(file_path), "content": appended_content, "append": True})
+        tool.run_helper(
+            {"path": str(file_path), "content": appended_content, "append": True}
+        )
     )
 
     # Verify
@@ -49,6 +51,6 @@ def test_write_file_missing_arguments():
 
     tool = WriteFileTool()
     # Run async with missing content
-    output = asyncio.run(tool.run({"path": "somepath.txt"}))
+    output = asyncio.run(tool.run_helper({"path": "somepath.txt"}))
 
     assert "Error" in output

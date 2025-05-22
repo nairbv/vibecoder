@@ -5,6 +5,8 @@ import subprocess
 import sys
 from typing import Dict, List
 
+from vibecoder.messages import ToolResult, ToolUse
+
 from .base import Tool
 
 PROMPT_DIR = os.path.join(os.path.dirname(__file__), "../prompts/tools")
@@ -59,7 +61,15 @@ class PytestTool(Tool):
             },
         }
 
-    async def run(self, args: Dict) -> str:
+    async def run(self, tool_use: ToolUse) -> ToolResult:
+        result_str = await self.run_helper(tool_use.arguments)
+        return ToolResult(
+            content=result_str,
+            tool_name=self.name,
+            tool_call_id=tool_use.tool_call_id,
+        )
+
+    async def run_helper(self, args: Dict) -> str:
         paths: List[str] = args.get("paths", [])
         verbose: bool = args.get("verbose", False)
         quiet: bool = args.get("quiet", False)

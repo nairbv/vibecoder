@@ -26,7 +26,7 @@ class TestApplyDiffPatchTool(unittest.TestCase):
         )
         args = {"patch_text": patch}
         # Run the async tool
-        result = asyncio.run(self.tool.run(args))
+        result = asyncio.run(self.tool.run_helper(args))
         # Confirm patch output indicates success
         self.assertIn("patching file", result)
         # Verify file was modified
@@ -38,7 +38,7 @@ class TestApplyDiffPatchTool(unittest.TestCase):
         patch = "invalid patch format"
         args = {"patch_text": patch}
         # Run the async tool
-        result = asyncio.run(self.tool.run(args))
+        result = asyncio.run(self.tool.run_helper(args))
         # Expect failure indication from patch command
         self.assertIn("[Patch application failed]", result)
 

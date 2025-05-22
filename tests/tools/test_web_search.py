@@ -45,7 +45,7 @@ class TestWebSearchTool(unittest.TestCase):
         query = "climate change news"
         args = {"query": query, "count": 2}
         # Run asynchronous tool.run
-        out = asyncio.run(self.tool.run(args))
+        out = asyncio.run(self.tool.run_helper(args))
         assert f"## Search results for: {query}" in out
         assert "[ABC](https://abc.com)" in out
         assert "DescA" in out
@@ -70,13 +70,13 @@ class TestWebSearchTool(unittest.TestCase):
         # Ensure API key is set for BRAVE
         os.environ["BRAVE_API_KEY"] = "fake-key"
         args = {"query": "somethingnoresults", "count": 3}
-        out = asyncio.run(self.tool.run(args))
+        out = asyncio.run(self.tool.run_helper(args))
         assert "No results found" in out
 
     def test_run_api_key_missing(self):
         if "BRAVE_SEARCH_API_KEY" in os.environ:
             del os.environ["BRAVE_SEARCH_API_KEY"]
-        out = asyncio.run(self.tool.run({"query": "x"}))
+        out = asyncio.run(self.tool.run_helper({"query": "x"}))
         assert "API key" in out or "Error" in out
 
     def test_run_http_error(self):
@@ -89,12 +89,12 @@ class TestWebSearchTool(unittest.TestCase):
 
         self.tool.fetch_url = fake_fetch_url
         os.environ["BRAVE_SEARCH_API_KEY"] = "fake-key"
-        out = asyncio.run(self.tool.run({"query": "foo"}))
+        out = asyncio.run(self.tool.run_helper({"query": "foo"}))
         # Expect the Boom message in error output
         assert "BOOM_FAIL" in out
 
     def test_unsupported_engine(self):
-        out = asyncio.run(self.tool.run({"query": "x", "engine": "not_valid"}))
+        out = asyncio.run(self.tool.run_helper({"query": "x", "engine": "not_valid"}))
         assert "not supported" in out or "Error" in out, out
 
     def test_do_search_direct(self):

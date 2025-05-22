@@ -11,12 +11,14 @@ class TestFetchUrlTool(unittest.TestCase):
 
     def test_missing_url(self):
         # No URL provided should return missing argument error
-        result = asyncio.run(self.tool.run({}))
+        result = asyncio.run(self.tool.run_helper({}))
         self.assertIn("[Error: Missing 'url' argument.]", result)
 
     def test_invalid_url(self):
         # This should fail cleanly, not crash
-        result = asyncio.run(self.tool.run({"url": "http://not-a-real-url-xyz.test/"}))
+        result = asyncio.run(
+            self.tool.run_helper({"url": "http://not-a-real-url-xyz.test/"})
+        )
         self.assertIn("[Error", result)
 
     def test_fetch_markdown_output(self):
@@ -24,7 +26,7 @@ class TestFetchUrlTool(unittest.TestCase):
         Test that fetching a valid URL returns markdown content including known text.
         """
         # Fetch example.com and verify markdown output contains expected title
-        result = asyncio.run(self.tool.run({"url": "https://example.com"}))
+        result = asyncio.run(self.tool.run_helper({"url": "https://example.com"}))
         self.assertIn("Example Domain", result)
 
     # Note: An actual fetch test is not robust for unit test suites (depends on network), so not included

@@ -1,7 +1,6 @@
 import asyncio
 import os
 import sys
-import threading
 import traceback
 
 import click
@@ -24,10 +23,8 @@ from prompt_toolkit.widgets import TextArea
 
 from vibecoder import agents
 from vibecoder.agent_status import RespondingStatus, WaitingStatus, WorkingStatus
-from vibecoder.agents import AgentResponse, ToolUse
-from vibecoder.agents.agent import ToolResult
-from vibecoder.agents.mock_agent import MockAgent
 from vibecoder.agents.swe import build_anthropic_swe_agent, build_swe_agent
+from vibecoder.messages import AgentResponse, ToolResult, ToolUse
 
 HISTORY_FILE = os.path.expanduser("~/.vibecoder_history")
 

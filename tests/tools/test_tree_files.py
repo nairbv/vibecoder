@@ -39,7 +39,7 @@ def test_basic_tree_run(monkeypatch):
         "include_pattern": "*.py",
     }
     # Run the async tool
-    output = asyncio.run(tool.run(args))
+    output = asyncio.run(tool.run_helper(args))
 
     assert "sample tree output" in output
     cmd = called_args["cmd"]
@@ -74,7 +74,7 @@ def test_path_sanitization(monkeypatch):
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     # Run async tool for path sanitization
-    asyncio.run(tool.run({"path": "../dangerous/.."}))
+    asyncio.run(tool.run_helper({"path": "../dangerous/.."}))
 
 
 def test_tree_command_failure(monkeypatch):
@@ -96,7 +96,7 @@ def test_tree_command_failure(monkeypatch):
         fake_create_subprocess_exec,
     )
     # Run async tool for command failure
-    output = asyncio.run(tool.run({"path": "."}))
+    output = asyncio.run(tool.run_helper({"path": "."}))
     # Expect stderr from failed tree command
     assert "tree failed" in output
 
@@ -115,7 +115,7 @@ def test_generic_exception(monkeypatch):
     )
     # Run async tool for generic exception; accept NameError due to undefined var in handler
     try:
-        output = asyncio.run(tool.run({"path": "."}))
+        output = asyncio.run(tool.run_helper({"path": "."}))
         # Should contain the original exception message
         assert "unexpected error" in output
     except NameError:
