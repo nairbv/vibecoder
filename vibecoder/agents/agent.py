@@ -208,7 +208,7 @@ class AnthropicAgent(BaseAgent):
                             tool_call_id=tool_use.id,
                         )
                     else:
-                        tool_result = await self.tools[tool_name].execute(tool_use_msg)
+                        tool_result = await self.tools[tool_name].run(tool_use_msg)
 
                     yield tool_result
 
