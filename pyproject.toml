@@ -1,17 +1,25 @@
-[tool.poetry]
+[project]
 name = "vibecoder"
 version = "0.1.0"
 description = "An agent with which to 'vibe code'"
-authors = ["Brian Vaughan <brian@gmail.com>"]
+authors = [
+    { name = "Brian Vaughan", email = "nairbv@gmail.com" }
+]
+requires-python = ">=3.8"
+dependencies = [
+    "click",
+    "python-dotenv",
+    "prompt_toolkit",
+    "openai",
+    "jinja2",
+    "markdownify",
+    "aiofiles"
+]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-click = "*"
-python-dotenv = "*"
-prompt_toolkit = "*"
-openai = "*"
-jinja2 = "*"
+# For template files
+[tool.setuptools.package-data]
+vibecoder = ["**/*.md"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

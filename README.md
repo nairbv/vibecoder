@@ -12,11 +12,9 @@ VibeCoder requires Python 3.8 or newer. To set up the environment, follow these 
 git clone https://github.com/yourusername/vibecoder.git
 cd vibecoder
 
-# Install dependencies using Poetry
-poetry install
+# Install with dependencies
+pip install .
 
-# Optionally, activate a virtual environment
-poetry shell
 ```
 
 ## Usage
