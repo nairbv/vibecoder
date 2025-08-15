@@ -39,7 +39,7 @@ class OpenAIAgent(BaseAgent):
         client,
         system_prompt: str = "",
         tools: Dict[str, Tool] = {},
-        model: str = "gpt-4.1-mini",
+        model: str = "gpt-5-mini",
         messages: list[AgentMessage] = [],
     ):
         self.model = model

@@ -37,7 +37,7 @@ async def test_agent_initialization(mock_openai_client, mock_tool):
         system_prompt="Test prompt",
         tools={"tool_name": mock_tool},
     )
-    assert agent.model == "gpt-4.1-mini"
+    assert agent.model == "gpt-5-mini"
     assert agent.tools == {"tool_name": mock_tool}
     assert agent.messages == [{"role": "system", "content": "Test prompt"}]
 
