@@ -1,6 +1,8 @@
 import os
 from typing import Dict
 
+import aiofiles
+
 from vibecoder.messages import ToolResult, ToolUse
 from vibecoder.tools.base import Tool
 
