@@ -5,6 +5,7 @@ description = "An agent with which to 'vibe code'"
 authors = [
     { name = "Brian Vaughan", email = "nairbv@gmail.com" }
 ]
+readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "click",
@@ -15,6 +16,9 @@ dependencies = [
     "markdownify",
     "aiofiles"
 ]
+
+[project.scripts]
+vibecoder = "vibecoder.main:main"
 
 # For template files
 [tool.setuptools.package-data]
