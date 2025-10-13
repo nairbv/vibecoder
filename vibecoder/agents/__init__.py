@@ -4,6 +4,7 @@ from vibecoder.agents.swe import (
     build_swe_agent,
     code_reviewer_analyst,
 )
+from vibecoder.agents.mock_agent import MockAgent
 
 
 def create_agent_by_role(role: str):

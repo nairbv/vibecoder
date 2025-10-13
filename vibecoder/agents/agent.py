@@ -29,6 +29,15 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
+    def set_system_prompt(self, system_prompt: str) -> None:
+        """Set or change the system prompt (role) for the agent.
+
+        This decouples the "role" (system prompt) from the client implementation
+        so callers can swap prompts independently of the underlying client.
+        """
+        pass
+
+    @abstractmethod
     async def ask(self, user_input: str) -> AsyncIterator[AgentMessage]:
         pass
 
@@ -56,6 +65,20 @@ class OpenAIAgent(BaseAgent):
     def set_model(self, model: str):
         """Set a new model for the agent to use."""
         self.model = model
+
+    def set_system_prompt(self, system_prompt: str) -> None:
+        """Replace the system prompt at the start of the conversation.
+
+        The OpenAI agent stores messages as a list where the first message is
+        expected to be the system prompt. Replacing it lets callers change
+        the agent's role without recreating the client.
+        """
+        if not self.messages:
+            self.messages = [{"role": "system", "content": system_prompt}]
+        else:
+            # Ensure the first message is the system prompt
+            self.messages[0] = {"role": "system", "content": system_prompt}
+
 
     async def ask(self, user_input: str) -> AsyncIterator[AgentMessage]:
         self.messages.append({"role": "user", "content": user_input})
@@ -130,7 +153,18 @@ class AnthropicAgent(BaseAgent):
         self.model = model
         self.tools = tools
         self.client = client
+        # Anthropic client expects messages in its own format. Store messages
+        # and the system prompt separately so set_system_prompt can update the
+        # system prompt without recreating the client.
         self.messages = [message.to_anthropic_dict() for message in messages]
+        self.system_prompt = system_prompt
+
+    def set_system_prompt(self, system_prompt: str) -> None:
+        """Set or replace the anthropic system prompt used for future calls.
+
+        Anthropic messages are stored separately; we update the stored
+        system_prompt value so subsequent ask() calls will use it.
+        """
         self.system_prompt = system_prompt
 
     def set_model(self, model: str):

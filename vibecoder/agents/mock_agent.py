@@ -14,10 +14,23 @@ class MockAgent(BaseAgent):
         self.tools = tools
         self.model = model
         self.messages = []
+        self.system_prompt = ""
 
     def set_model(self, model: str):
         """Set a new model for the mock agent."""
         self.model = model
+
+    def set_system_prompt(self, system_prompt: str) -> None:
+        """Set or change the mock agent's system prompt (role).
+
+        For the mock agent we store the system prompt and update the first
+        message if present so behavior matches the other agent types.
+        """
+        self.system_prompt = system_prompt
+        if not self.messages:
+            self.messages = [{"role": "system", "content": system_prompt}]
+        else:
+            self.messages[0] = {"role": "system", "content": system_prompt}
 
     async def ask(self, user_input: str) -> AsyncIterator[AgentResponse]:
         self.messages.append({"role": "user", "content": user_input})
@@ -30,7 +43,7 @@ class MockAgent(BaseAgent):
             """Duis -- a multi line message helps us make sure scroll works correctly per line
             aute irure
             dolor in reprehenderit
-            in voluptate 
+            in voluptate
             velit
             esse.""",
             "Cillum dolore eu fugiat nulla pariatur.",
