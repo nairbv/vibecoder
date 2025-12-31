@@ -55,9 +55,14 @@ class FetchUrlTool(Tool):
         )
 
 
+headers = {"User-Agent": "VibeCoderBot/1.0 (https://github.com/nairbv/vibecoder)"}
+
+
 async def fetch_bs(url, min_words=5) -> str:
     try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        async with httpx.AsyncClient(
+            headers=headers, timeout=10, follow_redirects=True
+        ) as client:
             resp = await client.get(url)
             if resp.status_code != 200:
                 return f"[Error] Non-OK status code `{resp.status_code}` - {resp.text}"
