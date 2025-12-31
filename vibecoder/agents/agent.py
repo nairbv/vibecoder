@@ -61,12 +61,12 @@ class OpenAIAgent(BaseAgent):
         self.messages.append({"role": "user", "content": user_input})
 
         while True:
-
+            tools = self.tools.values()
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=self.messages,
                 stream=False,
-                tools=[tool.signature for tool in self.tools.values()],
+                tools=[tool.signature for tool in tools] if len(tools) else None,
             )
 
             usage = response.usage
