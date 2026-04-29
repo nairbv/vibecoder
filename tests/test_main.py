@@ -4,46 +4,84 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from vibecoder.agents.agent import AgentResponse, ToolUse
-from vibecoder.main import REPLContextManager
+from vibecoder.messages import AgentResponse as MsgAgentResponse
+from vibecoder.session import Session
+
+
+class OutputCollector:
+    def __init__(self):
+        self.lines = []
+        self.statuses = []
+        self.exit_called = False
+
+    def on_output(self, text, style="application"):
+        self.lines.append((text, style))
+
+    def on_status(self, status):
+        self.statuses.append(status)
+
+    def on_exit(self):
+        self.exit_called = True
+
+    @property
+    def texts(self):
+        return [text for text, _ in self.lines]
 
 
 @pytest.fixture
-def setup_mock_agent():
-    """Sets up a mock agent with expected behaviors for use in tests."""
+def mock_agent():
+    """Creates a mock agent that yields a fixed response."""
 
-    async def mock_ask(*args, **kwargs):
-        yield AgentResponse(content="This is a test response")
-        yield ToolUse(
-            tool_name="mock_tool", arguments=["arg1", "arg2"]
-        )  # Sample tool call
+    class FixedAgent:
+        def __init__(self):
+            self.model = "test-model"
 
-    mock_agent = AsyncMock()
-    mock_agent.ask = mock_ask
-    return mock_agent
+        def set_model(self, model):
+            self.model = model
 
+        async def ask(self, user_input):
+            yield AgentResponse(content="This is a test response")
 
-@pytest.mark.asyncio
-async def test_context_save(setup_mock_agent):
-    with patch("vibecoder.main.build_swe_agent", return_value=setup_mock_agent):
-        manager = REPLContextManager()
-
-        user_instruction = "Test saving context"
-        await manager.save_context(user_instruction)
-
-        with open(".vibecoder/swe_session.md", "r") as file:
-            content = file.read()
-            assert "This is a test response" in content
-            assert user_instruction in content  # Should include the instruction
+    return FixedAgent()
 
 
 @pytest.mark.asyncio
-async def test_ask_functionality(setup_mock_agent):
-    with patch("vibecoder.main.build_swe_agent", return_value=setup_mock_agent):
-        manager = REPLContextManager()
+async def test_context_save(mock_agent, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
 
-        test_line = "Test input for asking functionality"
-        await manager.ask(test_line)
+    # Create the prompt file the save_context method reads
+    prompts_dir = tmp_path / "vibecoder" / "prompts"
+    prompts_dir.mkdir(parents=True)
+    (prompts_dir / "save_context.md").write_text("Summarize the session.")
 
-        # Check that the last_output was saved correctly
-        print(manager.last_output)
-        assert any("This is a test response" in resp for resp in manager.last_output)
+    c = OutputCollector()
+    session = Session(
+        on_output=c.on_output,
+        on_status=c.on_status,
+        on_exit=c.on_exit,
+        agent_factory=lambda role: mock_agent,
+    )
+
+    await session.save_context("Test saving context")
+
+    session_file = tmp_path / ".vibecoder" / "swe_session.md"
+    assert session_file.exists()
+    content = session_file.read_text()
+    assert "This is a test response" in content
+    assert "Context successfully saved" in c.texts[-1]
+
+
+@pytest.mark.asyncio
+async def test_ask_functionality(mock_agent):
+    c = OutputCollector()
+    session = Session(
+        on_output=c.on_output,
+        on_status=c.on_status,
+        on_exit=c.on_exit,
+        agent_factory=lambda role: mock_agent,
+    )
+
+    await session.ask("Test input for asking functionality")
+
+    assert any("This is a test response" in t for t in c.texts)
+    assert any("This is a test response" in o for o in session.last_output)
