@@ -11,6 +11,11 @@ __pycache__/
 # pytest cache
 .pytest_cache/
 
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
 # Vim backup/swap files
 *~
 *.swp
