@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict
 
-from vibecoder.agents.agent import ToolResult, ToolUse
+from vibecoder.messages import ToolResult, ToolUse
 
 
 class Tool(ABC):
@@ -29,6 +29,32 @@ class Tool(ABC):
         Execute the tool with a ToolUse object. Return the result wrapped in a ToolResult.
         """
         pass
+
+    @property
+    def canonical_schema(self) -> Dict:
+        """Provider-neutral schema derived from `signature`.
+
+        Returns a dict with keys: name, description, parameters
+        (JSON-Schema). Used by vibecoder.clients to convert to each
+        provider's wire format. Default impl extracts from the existing
+        OpenAI-style `signature` so existing Tool subclasses do not need
+        to change.
+        """
+        sig = self.signature
+        if "function" in sig:
+            fn = sig["function"]
+            return {
+                "name": fn.get("name", self.name),
+                "description": fn.get("description", ""),
+                "parameters": fn.get(
+                    "parameters", {"type": "object", "properties": {}}
+                ),
+            }
+        return {
+            "name": sig.get("name", self.name),
+            "description": sig.get("description", ""),
+            "parameters": sig.get("parameters", {"type": "object", "properties": {}}),
+        }
 
     @property
     def display_signature(self) -> str:

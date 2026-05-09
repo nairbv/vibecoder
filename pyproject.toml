@@ -12,6 +12,8 @@ dependencies = [
     "python-dotenv",
     "prompt_toolkit",
     "openai",
+    "anthropic",
+    "google-genai",
     "jinja2",
     "markdownify",
     "aiofiles"
